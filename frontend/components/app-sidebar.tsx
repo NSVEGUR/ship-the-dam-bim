@@ -14,8 +14,8 @@ import {
   Plug,
   Key,
   Settings,
-  ChevronDown,
 } from "lucide-react"
+import { ProjectSwitcher } from "@/components/project-switcher"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -47,13 +47,7 @@ export function AppSidebar() {
 
       {/* Project Selector */}
       <div className="border-b border-border p-3">
-        <button className="flex w-full items-center justify-between rounded-md bg-sidebar-accent px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/80">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-success" />
-            <span>Berlin Office Tower</span>
-          </div>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <ProjectSwitcher />
       </div>
 
       {/* Navigation */}
