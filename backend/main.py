@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from app.api.endpoints import router
-
+from app.mcp.ifc_mcp import mcp
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = FastAPI(title="Deliverable OPS API")
 
@@ -15,6 +19,8 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+app.mount("/mcp", mcp.streamable_http_app())
 
 if __name__ == "__main__":
     import uvicorn
