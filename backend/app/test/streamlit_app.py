@@ -117,30 +117,7 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
                 with sc4:
                     st.metric("Naming Conventions", f"{scores.get('naming_conventions', 0.0) * 100:.1f}%")
 
-                # st.divider()
-                
-                # New Guidance Section
-                st.header("Git-based Guidance (guidances)")
-                guidances = result.get("guidances", [])
-                if guidances:
-                    g_df = pd.DataFrame(guidances)
-                    for _, g in g_df.iterrows():
-                        with st.expander(f"🔴 {g['what_is_wrong']}"):
-                            st.write(f"**Why it matters:** {g['why_it_matters']}")
-                            st.write(f"**How to fix:** {g['where_to_fix_it']}")
-                    
-                    g_csv = g_df.to_csv(index=False).encode("utf-8")
-                    st.download_button(
-                        "Download Guidance CSV",
-                        g_csv,
-                        "guidances.csv",
-                        "text/csv",
-                        key="download-guidance",
-                    )
-                else:
-                    st.info("No AI guidance generated.")
-
-                st.header("2. Issue Summary (issue_summaries)")
+                st.header("2. Issue Summary")
                 summary_df = pd.DataFrame(result.get("issue_summaries", []))
                 if not summary_df.empty:
                     # Fix for 'LargeUtf8' error with Pandas 3.0+ / PyArrow strings
@@ -161,7 +138,7 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
                 else:
                     st.info("No summary data generated.")
 
-                st.header("3. Missing Properties (missing_properties)")
+                st.header("3. Missing Properties")
                 # Updated to use missing_properties from API result
                 issues_df = pd.DataFrame(result.get("missing_properties", []))
                 if not issues_df.empty:
@@ -179,7 +156,7 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
                 else:
                     st.success("No issues found.")
 
-                st.header("4. Terminology Mapping (terminology_mappings)")
+                st.header("4. Terminology Mapping")
                 term_df = pd.DataFrame(result.get("terminology_mappings", []))
                 if not term_df.empty:
                     # Fix for 'LargeUtf8' error

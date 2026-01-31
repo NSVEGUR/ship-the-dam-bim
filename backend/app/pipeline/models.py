@@ -36,6 +36,8 @@ class MissingProperty(BaseModel):
     suggested_value: Optional[str] = None
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     why_it_matters: Optional[str] = None
+    what_is_wrong: Optional[str] = None
+    where_to_fix_it: Optional[str] = None
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -67,7 +69,10 @@ class IssueSummary(BaseModel):
     checked_count: int = 0
     failed_count: int = 0
     pass_rate: float = 0.0
-    note: Optional[str] = None
+    pass_rate: float = 0.0
+    what_is_wrong: Optional[str] = None
+    why_it_matters: Optional[str] = None
+    where_to_fix_it: Optional[str] = None
 
 class ProfileRule(BaseModel):
     id: str
@@ -98,16 +103,11 @@ class Profile(BaseModel):
     rules: List[ProfileRule]
 
 
-class Guidance(BaseModel):
-    id: Optional[int] = None
-    what_is_wrong: str
-    why_it_matters: str
-    where_to_fix_it: str
+
 
 class ScanResult(BaseModel):
     missing_properties: List[MissingProperty] = []
     terminology_mappings: List[TerminologyMapping] = []
     issue_summaries: List[IssueSummary] = []
-    guidances: List[Guidance] = []
     scores: Optional[Dict[str, float]] = None
     timestamp: str

@@ -16,7 +16,9 @@ from app.pipeline.models import (
     MissingProperty,
     IssueSummary,
     TerminologyMapping,
-    Guidance,
+    MissingProperty,
+    IssueSummary,
+    TerminologyMapping,
 )
 from app.pipeline.deterministic import create_deterministic_scanner
 from app.pipeline.ai import AIAgent
@@ -81,12 +83,11 @@ class PipelineOrchestrator:
                 checked_count=s.checked_count,
                 failed_count=s.failed_count,
                 pass_rate=s.pass_rate,
-                note=s.note
+                what_is_wrong=s.what_is_wrong,
+                why_it_matters=s.why_it_matters,
+                where_to_fix_it=s.where_to_fix_it,
             ) for s in summary_final_raw
         ]
-
-        # 6. Generate Guidance (New)
-        guidances = await self.reasoner.generate_guidance(issues_final)
 
         # 7. Calculate Scores
         scores = self._calculate_scores(summary_final_raw)
@@ -95,7 +96,6 @@ class PipelineOrchestrator:
             missing_properties=issues_final,
             terminology_mappings=terminology_final,
             issue_summaries=issue_summaries,
-            guidances=guidances,
             scores=scores,
             timestamp=timestamp,
         )
@@ -107,7 +107,6 @@ class PipelineOrchestrator:
         self.store.save_missing_properties(report_id, result.missing_properties)
         self.store.save_terminology(report_id, result.terminology_mappings)
         self.store.save_summary(report_id, result.issue_summaries)
-        self.store.save_guidances(report_id, result.guidances)
 
         return result
 
@@ -194,7 +193,7 @@ class PipelineOrchestrator:
                     checked_count=checked,
                     failed_count=failed,
                     pass_rate=round(pass_rate, 2),
-                    note=f"Found {failed} violations.",
+                    # note removed
                 )
             )
         return summaries

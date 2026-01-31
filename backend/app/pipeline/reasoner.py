@@ -12,10 +12,10 @@ from typing import List, Dict, Optional, Any, Tuple
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.pipeline.models import (
+    IssueSummary,
     MissingProperty,
     TerminologyMapping,
     Profile,
-    Guidance,
 )
 from app.terminology.bsdd_client import get_allowed_values_for_property
 
@@ -80,64 +80,85 @@ class ContextReasoner:
                         if vals:
                             i.suggested_value = vals[0]
 
+        # 4. Generate Guidance for Rule Summaries and propagate to issues
+        if self.llm:
+            try:
+                summary, deduped = await self._generate_guidance_for_summaries(summary, deduped)
+            except Exception:
+                pass
+
         return deduped, terminology, summary
 
-    async def generate_guidance(self, issues: List[MissingProperty]) -> List[Guidance]:
-        """Generate high-level guidance/recommendations based on aggregated issues."""
-        if not self.llm or not issues:
-            return []
-        
+    async def _generate_guidance_for_summaries(
+        self,
+        summaries: List[IssueSummary],
+        issues: List[MissingProperty]
+    ) -> Tuple[List[IssueSummary], List[MissingProperty]]:
+        """
+        Generate guidance (what_is_wrong, why_it_matters, where_to_fix_it) for each failed rule.
+        Update IssueSummary and corresponding MissingProperty objects.
+        """
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        # Aggregate issues by rule/type for context
-        counts = {}
-        for i in issues:
-            k = f"{i.rule_name} ({i.issue_type})"
-            counts[k] = counts.get(k, 0) + 1
-        
-        top_issues = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:5]
-        summary_text = "\n".join([f"- {k}: {v} occurrences" for k, v in top_issues])
+        # Filter only failed rules
+        failed_summaries = [s for s in summaries if s.failed_count > 0]
+        if not failed_summaries:
+            return summaries, issues
+
+        # Prepare batch prompt
+        prompt_items = []
+        for s in failed_summaries:
+            prompt_items.append(f"- Rule: {s.rule_name} (ID: {s.rule_id})")
 
         sys = (
-            "You are a BIM Manager providing strategic guidance based on scan results. "
-            "Analyze the summary of top issues and provide 3-5 actionable guidance items. "
-            "For each item, provide: 'what_is_wrong', 'why_it_matters', and 'where_to_fix_it'. "
-            "Format the output strictly as distinct blocks separated by '---'."
+            "You are a BIM Manager. For each failed rule, provide 3 short distinct strings:\n"
+            "1. 'what_is_wrong': The error description.\n"
+            "2. 'why_it_matters': The impact.\n"
+            "3. 'where_to_fix_it': General location/method to fix.\n"
+            "Format: RuleID | what_is_wrong | why_it_matters | where_to_fix_it"
         )
-        user = f"Scan Summary (Top Issues):\n{summary_text}\n\nProvide guidance:"
+        user = "Rules:\n" + "\n".join(prompt_items)
 
         try:
             resp = await self.llm.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
             text = resp.content if hasattr(resp, "content") else str(resp)
             
-            guidances = []
-            blocks = text.split("---")
-            for block in blocks:
-                lines = [l.strip() for l in block.strip().split("\n") if l.strip()]
-                g = {"what_is_wrong": "", "why_it_matters": "", "where_to_fix_it": ""}
-                current_key = None
-                
-                for line in lines:
-                    lower = line.lower()
-                    if "what is wrong" in lower or "what_is_wrong" in lower:
-                        current_key = "what_is_wrong"
-                        g[current_key] = line.split(":", 1)[-1].strip()
-                    elif "why it matters" in lower or "why_it_matters" in lower:
-                        current_key = "why_it_matters"
-                        g[current_key] = line.split(":", 1)[-1].strip()
-                    elif "where to fix" in lower or "where_to_fix_it" in lower:
-                        current_key = "where_to_fix_it"
-                        g[current_key] = line.split(":", 1)[-1].strip()
-                    elif current_key:
-                        g[current_key] += " " + line
-                
-                if g["what_is_wrong"] and g["why_it_matters"]:
-                    guidances.append(Guidance(**g))
+            # Parse response
+            guidance_map = {} # rule_id -> {what, why, where}
+            for line in text.split("\n"):
+                parts = [p.strip() for p in line.split("|")]
+                if len(parts) >= 4:
+                    rid = parts[0]
+                    guidance_map[rid] = {
+                        "what_is_wrong": parts[1],
+                        "why_it_matters": parts[2],
+                        "where_to_fix_it": parts[3]
+                    }
             
-            return guidances
-
+            # Update summaries
+            for s in summaries:
+                if s.rule_id in guidance_map:
+                    g = guidance_map[s.rule_id]
+                    s.what_is_wrong = g["what_is_wrong"]
+                    s.why_it_matters = g["why_it_matters"]
+                    s.where_to_fix_it = g["where_to_fix_it"]
+            
+            # Update issues
+            for i in issues:
+                if i.rule_id in guidance_map:
+                    g = guidance_map[i.rule_id]
+                    i.what_is_wrong = g["what_is_wrong"]
+                    # Only overwrite why_it_matters if missing or short? keeping logic simple for now
+                    if not i.why_it_matters:
+                        i.why_it_matters = g["why_it_matters"]
+                    i.where_to_fix_it = g["where_to_fix_it"]
+                    
         except Exception:
-            return []
+            pass
+            
+        return summaries, issues
+
+
 
     async def _enrich_with_llm(self, issues: List[MissingProperty], profile: Profile) -> List[MissingProperty]:
         """Enrich why_it_matters for issues that lack it or have generic text."""

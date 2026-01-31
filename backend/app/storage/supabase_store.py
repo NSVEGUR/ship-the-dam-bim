@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from app.storage.supabase_client import get_supabase
-from app.pipeline.models import ScanResult, TerminologyMapping, MissingProperty, IssueSummary, Guidance
+from app.pipeline.models import ScanResult, TerminologyMapping, MissingProperty, IssueSummary
 
 class SupabaseStorage:
     def __init__(self):
@@ -51,6 +51,8 @@ class SupabaseStorage:
                 "suggested_value": prop.suggested_value,
                 "confidence": prop.confidence,
                 "why_it_matters": prop.why_it_matters,
+                "what_is_wrong": prop.what_is_wrong,
+                "where_to_fix_it": prop.where_to_fix_it,
             })
         
         # Insert in chunks of 1000 to avoid request size limits
@@ -102,29 +104,15 @@ class SupabaseStorage:
                 "checked_count": s.checked_count,
                 "failed_count": s.failed_count,
                 "pass_rate": s.pass_rate,
-                "note": s.note, # Changed notes to note in model
+                "pass_rate": s.pass_rate,
+                "what_is_wrong": s.what_is_wrong,
+                "why_it_matters": s.why_it_matters,
+                "where_to_fix_it": s.where_to_fix_it,
             })
         
         self.client.table("issue_summaries").insert(batch_data).execute()
 
-    def save_guidances(self, report_id: int, guidances: List[Guidance]):
-        """
-        Batch save guidances to guidances table.
-        """
-        if not guidances:
-            return
 
-        batch_data = []
-        for g in guidances:
-            batch_data.append({
-                "report_id": report_id,
-                "what_is_wrong": g.what_is_wrong,
-                "why_it_matters": g.why_it_matters,
-                "where_to_fix_it": g.where_to_fix_it,
-                # created_at default now()
-            })
-        
-        self.client.table("guidances").insert(batch_data).execute()
 
     def get_latest_report_terminology(self, project_id: int) -> Dict[str, str] | None:
         """
