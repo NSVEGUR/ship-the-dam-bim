@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP
 
-from ifc_util import *
+from .ifc_util import *
 
 mcp=FastMCP("ifcMCP")
 
@@ -196,3 +196,17 @@ def get_space_boundaries(file_path:str, globalId:str):
     #mcp.run(transport="stdio")  # Default, so transport argument is optional
     # mcp.run(transport="streamable-http") # default port 8000, access streamable-http mcp server via http://127.0.01:8000/mcp
     #mcp.run(transport="sse")
+
+# setup MCP server with the following configuration
+# {
+#   "mcpServers": {
+#     "ifcMCP-server": {
+#       "name": "ifcMCP",
+#       "type": "streamableHttp",
+#       "description": "A simple MCP server to handle ifc files",
+#       "isActive": true,
+#       "tags": [],
+#       "baseUrl": "http://127.0.0.1:8000/mcp"
+#     }
+#   }
+# }

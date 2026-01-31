@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from app.api.endpoints import router
 from app.mcp.ifc_mcp import mcp
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = FastAPI(title="Deliverable OPS API")
 
