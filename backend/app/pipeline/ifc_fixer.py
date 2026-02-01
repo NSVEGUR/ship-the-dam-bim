@@ -5,7 +5,8 @@ Takes missing_properties and terminology_mappings from scan results
 and applies the suggested values to create a corrected IFC file.
 """
 
-import io
+import os
+import tempfile
 from typing import List, Optional, Dict, Any
 
 import ifcopenshell
@@ -183,12 +184,19 @@ def apply_fixes(
                 if _set_property_value(ifc_file, pset, prop_name, suggested_value):
                     applied_count += 1
     
-    # ---------- Write to bytes ----------
-    output = io.BytesIO()
-    ifc_file.write(output)
-    output.seek(0)
+    # ---------- Write to temp file and read bytes ----------
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as tmp:
+        tmp_output_path = tmp.name
     
-    return output.getvalue()
+    try:
+        ifc_file.write(tmp_output_path)
+        with open(tmp_output_path, "rb") as f:
+            return f.read()
+    finally:
+        try:
+            os.unlink(tmp_output_path)
+        except Exception:
+            pass
 
 
 def apply_fixes_from_scan_result(
