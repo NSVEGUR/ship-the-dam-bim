@@ -4,5 +4,4 @@ export { QuickActionsPanel } from "./QuickActionsPanel";
 export { ValidationCategoriesSection } from "./ValidationCategoriesSection";
 export { ProjectInfoBar } from "./ProjectsBar";
 export { FileUploadPanel } from "./FileUploadPanel";
-
 export { ValidationCategoriesCards } from "./ValidationCategoriesCards";
