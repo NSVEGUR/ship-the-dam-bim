@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TypewriterText } from "@/components/ui/TypewriterText";
 
 interface AISuggestion {
     title: string;
@@ -39,6 +41,13 @@ export function AISuggestionsPanel({
     onDismiss,
     onAccept,
 }: AISuggestionsPanelProps) {
+    const [typingStage, setTypingStage] = useState(0);
+
+    // Reset typing stage when suggestion changes
+    useEffect(() => {
+        setTypingStage(0);
+    }, [suggestion]);
+
     // Empty state - Layered approach matching screenshot
     if (!selectedItem) {
         return (
@@ -147,17 +156,37 @@ export function AISuggestionsPanel({
                 <div className="space-y-3">
                     <div>
                         <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">What is wrong</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whatIsWrong || "No information available."}</p>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 min-h-[1.25rem]">
+                            <TypewriterText
+                                text={suggestion.whatIsWrong || "No information available."}
+                                speed={10}
+                                start={typingStage >= 0}
+                                onComplete={() => setTypingStage(prev => Math.max(prev, 1))}
+                            />
+                        </div>
                     </div>
 
                     <div>
                         <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">Why it matters</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whyItMatters || "No information available."}</p>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 min-h-[1.25rem]">
+                            <TypewriterText
+                                text={suggestion.whyItMatters || "No information available."}
+                                speed={10}
+                                start={typingStage >= 1}
+                                onComplete={() => setTypingStage(prev => Math.max(prev, 2))}
+                            />
+                        </div>
                     </div>
 
                     <div>
                         <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">Where to fix it</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whereToFixIt || "No information available."}</p>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 min-h-[1.25rem]">
+                            <TypewriterText
+                                text={suggestion.whereToFixIt || "No information available."}
+                                speed={10}
+                                start={typingStage >= 2}
+                            />
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-center gap-4 pt-2">

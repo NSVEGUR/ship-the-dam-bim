@@ -7,19 +7,25 @@ interface TypewriterTextProps {
     speed?: number;
     className?: string;
     onComplete?: () => void;
+    start?: boolean;
 }
 
-export function TypewriterText({ text, speed = 15, className, onComplete }: TypewriterTextProps) {
+export function TypewriterText({ text, speed = 15, className, onComplete, start = true }: TypewriterTextProps) {
     const [displayedText, setDisplayedText] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [isComplete, setIsComplete] = useState(false);
 
     // Reset when text changes
     useEffect(() => {
         setDisplayedText("");
         setCurrentIndex(0);
+        setIsComplete(false);
     }, [text]);
 
     useEffect(() => {
+        if (!start) return;
+        if (isComplete) return;
+
         if (currentIndex < text.length) {
             const timeout = setTimeout(() => {
                 setDisplayedText((prev) => prev + text[currentIndex]);
@@ -27,10 +33,13 @@ export function TypewriterText({ text, speed = 15, className, onComplete }: Type
             }, speed);
 
             return () => clearTimeout(timeout);
-        } else if (onComplete) {
-            onComplete();
+        } else {
+            setIsComplete(true);
+            if (onComplete) {
+                onComplete();
+            }
         }
-    }, [currentIndex, text, speed, onComplete]);
+    }, [currentIndex, text, speed, onComplete, start, isComplete]);
 
     return <p className={className}>{displayedText}</p>;
 }
