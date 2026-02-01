@@ -38,7 +38,6 @@ class MissingProperty(BaseModel):
     why_it_matters: Optional[str] = None
     what_is_wrong: Optional[str] = None
     where_to_fix_it: Optional[str] = None
-    holistic_guidance: Optional[str] = None  # Per-row Manus guidance
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -73,7 +72,6 @@ class IssueSummary(BaseModel):
     what_is_wrong: Optional[str] = None
     why_it_matters: Optional[str] = None
     where_to_fix_it: Optional[str] = None
-    holistic_guidance: Optional[str] = None  # Per-row Manus guidance
 
 class ProfileRule(BaseModel):
     id: str

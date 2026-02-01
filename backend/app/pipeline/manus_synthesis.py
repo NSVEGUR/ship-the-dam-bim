@@ -232,7 +232,7 @@ object_classification: 0.80"""
                 if 0 <= idx < len(batch) and guidance:
                     # Clean up trailing numbers from next item if any
                     guidance = re.split(r"\n\d+[.)]", guidance)[0].strip()
-                    batch[idx].holistic_guidance = guidance
+                    # holistic_guidance removed from schema - skip assignment
             except (ValueError, IndexError):
                 continue
     
@@ -247,7 +247,7 @@ object_classification: 0.80"""
                 if 0 <= idx < len(summaries) and guidance:
                     # Clean up
                     guidance = re.split(r"\n\d+[.)]", guidance)[0].strip()
-                    summaries[idx].holistic_guidance = guidance
+                    # holistic_guidance removed from schema - skip assignment
             except (ValueError, IndexError):
                 continue
     
