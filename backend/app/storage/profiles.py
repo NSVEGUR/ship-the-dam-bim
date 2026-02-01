@@ -121,7 +121,7 @@ DEFAULT_PROFILES: Dict[str, dict] = {
                 "entity_type": "IfcWall",
                 "property_set": "Pset_WallCommon",
                 "property_name": "LoadBearing",
-                "allowed_values": ["TRUE", "FALSE", "True", "False", "Yes", "No", True, False],
+                "allowed_values": ["TRUE", "FALSE", "True", "False", "Yes", "No", "true", "false"],
                 "severity": "MINOR",
                 "description": "Structural classification is important for renovation planning and safety.",
             },
