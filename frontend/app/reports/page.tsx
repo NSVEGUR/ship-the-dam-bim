@@ -18,6 +18,7 @@ const supabase = createClient(
 
 interface Report {
     id: string;
+    report_id?: string;
     created_at: string;
     project_id: string;
     content: any;
@@ -121,8 +122,11 @@ export default function ReportsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {reports.map((report) => (
-                                            <TableRow key={report.id} className="hover:bg-gray-50 dark:hover:bg-sidebar/50 transition-colors">
+                                        {reports.map((report, idx) => (
+                                            <TableRow
+                                                key={report.id || report.report_id || idx}
+                                                className="hover:bg-gray-50 dark:hover:bg-sidebar/50 transition-colors"
+                                            >
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-2">
                                                         <Calendar className="h-4 w-4 text-gray-400" />

@@ -20,6 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 import { cn } from "@/lib/utils";
 import { useProject } from "@/components/ProjectContext";
+import { FixIfcDialog } from "@/components/report/FixIfcDialog";
 
 
 export function FileUploadPanel() {
@@ -27,6 +28,7 @@ export function FileUploadPanel() {
     const [isDragging, setIsDragging] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const [fixDialogOpen, setFixDialogOpen] = useState(false);
 
     const [isScanning, setIsScanning] = useState(false);
     const [llmProvider, setLlmProvider] = useState<string>("gemini");
@@ -276,6 +278,7 @@ export function FileUploadPanel() {
                                 variant="outline"
                                 size="sm"
                                 className="h-9 border-gray-200 dark:border-gray-600"
+                                onClick={() => setFixDialogOpen(true)}
                             >
                                 Download
                             </Button>
@@ -283,6 +286,8 @@ export function FileUploadPanel() {
                     </div>
                 </CardContent>
             </Card>
+
+            <FixIfcDialog open={fixDialogOpen} onOpenChange={setFixDialogOpen} />
         </>
     );
 }
