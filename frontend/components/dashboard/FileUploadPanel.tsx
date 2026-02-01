@@ -174,8 +174,8 @@ export function FileUploadPanel() {
                                 uploadedFile
                                     ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30"
                                     : isDragging
-                                        ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30"
-                                        : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        ? "border-primary bg-primary/10"
+                                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
                             )}
                         >
                             {uploadedFile ? (
