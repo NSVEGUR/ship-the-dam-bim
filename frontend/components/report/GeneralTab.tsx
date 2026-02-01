@@ -73,7 +73,7 @@ export function GeneralTab() {
             <StyledTableContainer className="flex-1 overflow-auto">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                        <TableRow className="bg-gray-50/50 dark:bg-card hover:bg-gray-50/50 dark:hover:bg-card/80">
                             <TableHead className="w-24 text-gray-600 dark:text-gray-400 font-medium">Rule ID</TableHead>
                             <TableHead className="text-gray-600 dark:text-gray-400 font-medium">Rule Name</TableHead>
                             <TableHead className="w-28 text-gray-600 dark:text-gray-400 font-medium">Severity</TableHead>
@@ -88,7 +88,7 @@ export function GeneralTab() {
                                 key={rule.ruleId}
                                 className={cn(
                                     "cursor-pointer transition-colors",
-                                    selectedRule?.ruleId === rule.ruleId && "bg-blue-50/50 dark:bg-blue-900/20",
+                                    selectedRule?.ruleId === rule.ruleId ? "bg-blue-50/50 dark:bg-blue-900/20" : "bg-white dark:bg-sidebar",
                                     "hover:bg-gray-50 dark:hover:bg-gray-700"
                                 )}
                                 onClick={() => setSelectedRule(rule)}
@@ -112,7 +112,13 @@ export function GeneralTab() {
             {/* AI Suggestions Panel */}
             <AISuggestionsPanel
                 selectedItem={selectedRule ? { name: selectedRule.ruleName } : null}
-                suggestion={selectedRule ? getMockSuggestion(selectedRule) : null}
+                suggestion={selectedRule ? {
+                    title: selectedRule.ruleName,
+                    confidence: 0,
+                    whatIsWrong: selectedRule.whatIsWrong,
+                    whyItMatters: selectedRule.whyItMatters,
+                    whereToFixIt: selectedRule.whereToFixIt
+                } : null}
                 onDismiss={() => setSelectedRule(null)}
                 onAccept={() => setSelectedRule(null)}
             />

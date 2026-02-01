@@ -9,7 +9,7 @@ export function ValidationCategoriesCards() {
     const { stats } = currentProject;
 
     return (
-        <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+        <Card className="bg-white dark:bg-card border border-gray-200 dark:border-gray-700 h-full flex flex-col">
             <CardHeader className="pb-0 pt-3 px-4">
                 <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Validation Categories</CardTitle>
             </CardHeader>
@@ -17,7 +17,7 @@ export function ValidationCategoriesCards() {
                 {stats.validationCategories.map((cat) => (
                     <div
                         key={cat.id}
-                        className="p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 flex flex-col"
+                        className="p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-muted flex flex-col"
                     >
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">

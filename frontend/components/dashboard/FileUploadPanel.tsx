@@ -27,7 +27,9 @@ export function FileUploadPanel() {
     const [isDragging, setIsDragging] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
     const [isScanning, setIsScanning] = useState(false);
+    const [llmProvider, setLlmProvider] = useState<string>("gemini");
     const [profiles, setProfiles] = useState<{ id: string; name: string }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { currentProject, updateProjectStats } = useProject();
@@ -108,6 +110,7 @@ export function FileUploadPanel() {
             formData.append("file", uploadedFile);
             formData.append("project_id", currentProject.id);
             formData.append("profile_id", selectedProfile || "default_safety");
+            formData.append("llm_provider", llmProvider);
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
             const response = await fetch(`${apiUrl}/scan`, {
@@ -145,7 +148,7 @@ export function FileUploadPanel() {
     return (
         <>
             <ScanningOverlay isVisible={isScanning} />
-            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-card border border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-0 pt-3 px-4">
                     <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Quick Action</CardTitle>
                 </CardHeader>
@@ -198,38 +201,71 @@ export function FileUploadPanel() {
 
                         {/* Right column: Action buttons */}
                         <div className="flex-1 flex flex-col gap-2">
-                            {/* Profile Dropdown */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="justify-between gap-2 h-9 border-gray-200 dark:border-gray-600"
-                                    >
-                                        {selectedProfile
-                                            ? profiles.find(p => p.id === selectedProfile)?.name
-                                            : "Choose Profile"}
-                                        <ChevronDown className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-48">
-                                    {profiles.map((profile) => (
-                                        <DropdownMenuItem
-                                            key={profile.id}
-                                            onClick={() => setSelectedProfile(profile.id)}
-                                            className={cn(
-                                                selectedProfile === profile.id && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                                            )}
+                            <div className="flex gap-2">
+                                {/* Profile Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="justify-between gap-2 h-9 border-gray-200 dark:border-gray-600 flex-1"
                                         >
-                                            {profile.name}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                            <span className="truncate">
+                                                {selectedProfile
+                                                    ? profiles.find(p => p.id === selectedProfile)?.name
+                                                    : "Choose Profile"}
+                                            </span>
+                                            <ChevronDown className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 shrink-0" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48">
+                                        {profiles.map((profile) => (
+                                            <DropdownMenuItem
+                                                key={profile.id}
+                                                onClick={() => setSelectedProfile(profile.id)}
+                                                className={cn(
+                                                    selectedProfile === profile.id && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                                )}
+                                            >
+                                                {profile.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* LLM Provider Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="justify-between gap-2 h-9 border-gray-200 dark:border-gray-600 w-32"
+                                        >
+                                            <span className="capitalize">{llmProvider}</span>
+                                            <ChevronDown className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-32">
+                                        {["gemini", "minimax", "openai"].map((provider) => (
+                                            <DropdownMenuItem
+                                                key={provider}
+                                                onClick={() => setLlmProvider(provider)}
+                                                className={cn(
+                                                    llmProvider === provider && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
+                                                    "capitalize"
+                                                )}
+                                            >
+                                                {provider}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+
                             {/* Scan button - primary */}
                             <Button
                                 size="sm"
-                                className="h-9 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900"
+                                className="h-9 bg-gray-900 dark:bg-[#F09362] hover:bg-gray-800 dark:hover:bg-[#F09362]/90 text-white dark:text-gray-900"
                                 onClick={handleScan}
                                 disabled={isScanning || !uploadedFile}
                             >

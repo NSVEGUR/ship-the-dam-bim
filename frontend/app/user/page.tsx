@@ -30,13 +30,13 @@ export default function UserPage() {
                         {/* User Info */}
                         <div className="flex items-center gap-4">
                             <div className="h-12 w-12 rounded-full bg-violet-600 flex items-center justify-center text-white text-lg font-medium">
-                                L
+                                M
                             </div>
                             <div>
-                                <div className="font-medium text-gray-900 dark:text-gray-100">Levin Wilke</div>
+                                <div className="font-medium text-gray-900 dark:text-gray-100">Max Mustermann</div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                     <span>✉️</span>
-                                    levin.wilke05@gmail.com
+                                    user@example.com
                                 </div>
                             </div>
                         </div>
@@ -46,7 +46,7 @@ export default function UserPage() {
                         {/* User ID */}
                         <div>
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">User ID</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">user_e9bea4edf00</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">user_e9bea4edf10</div>
                         </div>
                     </CardContent>
                 </Card>

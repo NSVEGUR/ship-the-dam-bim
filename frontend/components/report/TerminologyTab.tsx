@@ -83,13 +83,7 @@ function StatusBadge({ status }: { status: "PROPOSED" | "ACCEPTED" | "REJECTED" 
     );
 }
 
-// Mock AI suggestion
-const getMockSuggestion = (mapping: TerminologyMapping) => ({
-    title: mapping.original,
-    confidence: mapping.confidence,
-    whyMatters: `The term "${mapping.original}" has been detected in your model. Standardizing this to "${mapping.suggestedEN}" (EN) / "${mapping.suggestedDE}" (DE) ensures consistent terminology across all project documentation.`,
-    ifIgnored: `Non-standardized terminology may cause confusion in multi-language projects and inconsistencies in exported documentation.`,
-});
+
 
 export function TerminologyTab() {
     const { currentProject, updateTerminologyStatus, updateTerminologySuggestion } = useProject();
@@ -189,7 +183,7 @@ export function TerminologyTab() {
                                     key={idx}
                                     className={cn(
                                         "cursor-pointer transition-colors",
-                                        selectedMapping === mapping && "bg-blue-50/50 dark:bg-blue-900/20",
+                                        selectedMapping === mapping ? "bg-blue-50/50 dark:bg-blue-900/20" : "bg-white dark:bg-sidebar",
                                         "hover:bg-gray-50 dark:hover:bg-gray-700"
                                     )}
                                     onClick={() => setSelectedMapping(mapping)}
@@ -296,7 +290,13 @@ export function TerminologyTab() {
             {/* AI Suggestions Panel */}
             <AISuggestionsPanel
                 selectedItem={selectedMapping ? { name: selectedMapping.original } : null}
-                suggestion={selectedMapping ? getMockSuggestion(selectedMapping) : null}
+                suggestion={selectedMapping ? {
+                    title: selectedMapping.original,
+                    confidence: selectedMapping.confidence,
+                    whatIsWrong: selectedMapping.whatIsWrong,
+                    whyItMatters: selectedMapping.whyItMatters,
+                    whereToFixIt: selectedMapping.whereToFixIt
+                } : null}
                 onDismiss={handleAIDismiss}
                 onAccept={handleAIAccept}
             />

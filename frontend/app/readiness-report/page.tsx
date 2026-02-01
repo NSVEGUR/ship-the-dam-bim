@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import * as XLSX from "xlsx";
 import { Check, Download, ChevronDown } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
@@ -19,11 +20,24 @@ import {
     TerminologyTab,
 } from "@/components/report";
 import { ReadinessScoreHeader } from "@/components/report/ReadinessScoreHeader";
+import { FixIfcDialog } from "@/components/report/FixIfcDialog";
+import { exportFixPack } from "@/lib/export-utils";
 
 export default function ReadinessReportPage() {
     const { currentProject, saveReport } = useProject();
     const { stats } = currentProject;
     const isReady = stats.readinessScore >= 95;
+
+    const [fixDialogOpen, setFixDialogOpen] = React.useState(false);
+
+    const handleExportBcf = async () => {
+        try {
+            await exportFixPack(currentProject);
+        } catch (error) {
+            console.error("Failed to export BCF:", error);
+            alert("Failed to export BCF zip.");
+        }
+    };
 
     const handleExportExcel = async () => {
         try {
@@ -94,7 +108,7 @@ export default function ReadinessReportPage() {
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                                <Button className="gap-2 bg-[#F09362] hover:bg-[#F09362]/90 text-white dark:text-gray-900 border-none">
                                     <Download className="h-4 w-4" />
                                     Export
                                     <ChevronDown className="h-4 w-4" />
@@ -102,11 +116,15 @@ export default function ReadinessReportPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={handleExportExcel}>Export as Excel</DropdownMenuItem>
-                                <DropdownMenuItem>Export as BCF</DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleExportBcf}>Export as BCF</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setFixDialogOpen(true)}>Fixed IFC</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                 </div>
+
+                {/* Fix IFC Dialog */}
+                <FixIfcDialog open={fixDialogOpen} onOpenChange={setFixDialogOpen} />
 
                 {/* Score and Issues Summary Cards */}
                 <ReadinessScoreHeader />

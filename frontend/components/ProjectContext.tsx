@@ -25,6 +25,7 @@ export interface ValidationRule {
     passRate: number;
     notes: string;
     whyItMatters?: string;
+    whatIsWrong?: string;
     whereToFixIt?: string;
 }
 
@@ -94,7 +95,16 @@ interface ProjectContextType {
     createNewProject: (name: string, description: string, language: string) => Promise<void>;
     updateProjectStats: (
         projectId: string,
-        scores: { overall_readiness: number; object_classification: number; property_sets: number; naming_conventions: number },
+        scores: {
+            overall_readiness: number;
+            object_classification: number;
+            property_sets: number;
+            naming_conventions: number;
+            adjusted_overall_readiness?: number;
+            adjusted_object_classification?: number;
+            adjusted_property_sets?: number;
+            adjusted_naming_conventions?: number;
+        },
         issueSummaries: any[],
         missingProperties: any[],
         terminologyMappings: any[]
@@ -228,11 +238,27 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
     const updateProjectStats = useCallback(async (
         projectId: string,
-        scores: { overall_readiness: number; object_classification: number; property_sets: number; naming_conventions: number },
+        scores: {
+            overall_readiness: number;
+            object_classification: number;
+            property_sets: number;
+            naming_conventions: number;
+            adjusted_overall_readiness?: number;
+            adjusted_object_classification?: number;
+            adjusted_property_sets?: number;
+            adjusted_naming_conventions?: number;
+        },
         issueSummaries: any[] = [],
         missingProperties: any[] = [],
         terminologyMappings: any[] = []
     ) => {
+        // Use adjusted scores if available, otherwise fall back to original scores
+        const effectiveScores = {
+            overall_readiness: scores.adjusted_overall_readiness ?? scores.overall_readiness,
+            object_classification: scores.adjusted_object_classification ?? scores.object_classification,
+            property_sets: scores.adjusted_property_sets ?? scores.property_sets,
+            naming_conventions: scores.adjusted_naming_conventions ?? scores.naming_conventions,
+        };
 
         let scoreChange = 0;
         try {
@@ -251,8 +277,10 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             if (data && data.content) {
                 // Parse content if it's a string, otherwise use as object
                 const content = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
-                const prevScore = (content.scores?.overall_readiness || 0) * 100;
-                const currentScore = scores.overall_readiness * 100;
+                // Check for adjusted scores in previous report as well
+                const prevScores = content.scores || {};
+                const prevScore = ((prevScores.adjusted_overall_readiness ?? prevScores.overall_readiness) || 0) * 100;
+                const currentScore = effectiveScores.overall_readiness * 100;
                 scoreChange = Math.round(currentScore - prevScore);
             }
         } catch (err) {
@@ -294,7 +322,10 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
                     checked: checked,
                     failed: failed,
                     passRate: issue.pass_rate !== undefined ? Math.round(issue.pass_rate * 100) : (checked > 0 ? Math.round(((checked - failed) / checked) * 100) : 100),
-                    notes: issue.why_it_matters || ""
+                    notes: issue.why_it_matters || "",
+                    whyItMatters: issue.why_it_matters,
+                    whatIsWrong: issue.what_is_wrong,
+                    whereToFixIt: issue.where_to_fix_it
                 };
             });
 
@@ -313,7 +344,10 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
                     elementName: mp.element_name || "Unknown Element",
                     level: mp.level || "Unknown Level",
                     propertySet: mp.property_set || "None",
-                    propertyKey: mp.property_key || "None"
+                    propertyKey: mp.property_key || "None",
+                    whatIsWrong: mp.what_is_wrong,
+                    whyItMatters: mp.why_it_matters,
+                    whereToFixIt: mp.where_to_fix_it
                 };
             });
 
@@ -323,22 +357,25 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
                 suggestedEN: tm.suggested_en || "Review",
                 suggestedDE: tm.suggested_de || tm.original,
                 confidence: Math.round((tm.confidence || 0) * 100),
-                status: tm.status || "PROPOSED"
+                status: tm.status || "PROPOSED",
+                whatIsWrong: tm.what_is_wrong,
+                whyItMatters: tm.why_it_matters,
+                whereToFixIt: tm.where_to_fix_it
             }));
 
             return {
                 ...project,
                 stats: {
                     ...project.stats,
-                    readinessScore: Math.round(scores.overall_readiness * 100),
+                    readinessScore: Math.round(effectiveScores.overall_readiness * 100),
                     readinessScoreChange: scoreChange,
                     issuesCritical: criticalCount,
                     issuesWarning: warningCount,
                     issuesOk: infoCount,
                     validationCategories: [
-                        { id: "obj-class", name: "Object Classification", percentage: Math.round(scores.object_classification * 100), status: scores.object_classification >= 0.95 ? "ok" : scores.object_classification >= 0.7 ? "warning" : "critical" },
-                        { id: "prop-sets", name: "Property Sets", percentage: Math.round(scores.property_sets * 100), status: scores.property_sets >= 0.95 ? "ok" : scores.property_sets >= 0.7 ? "warning" : "critical" },
-                        { id: "naming", name: "Naming Conventions", percentage: Math.round(scores.naming_conventions * 100), status: scores.naming_conventions >= 0.95 ? "ok" : scores.naming_conventions >= 0.7 ? "warning" : "critical" },
+                        { id: "obj-class", name: "Object Classification", percentage: Math.round(effectiveScores.object_classification * 100), status: effectiveScores.object_classification >= 0.95 ? "ok" : effectiveScores.object_classification >= 0.7 ? "warning" : "critical" },
+                        { id: "prop-sets", name: "Property Sets", percentage: Math.round(effectiveScores.property_sets * 100), status: effectiveScores.property_sets >= 0.95 ? "ok" : effectiveScores.property_sets >= 0.7 ? "warning" : "critical" },
+                        { id: "naming", name: "Naming Conventions", percentage: Math.round(effectiveScores.naming_conventions * 100), status: effectiveScores.naming_conventions >= 0.95 ? "ok" : effectiveScores.naming_conventions >= 0.7 ? "warning" : "critical" },
                     ],
                     validationRules: validationRules,
                     missingProperties: mappedMissingProperties,

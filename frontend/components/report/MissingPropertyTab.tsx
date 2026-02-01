@@ -50,13 +50,7 @@ function ElementTypeBadge({ type }: { type: string }) {
     );
 }
 
-// Mock AI suggestion
-const getMockSuggestion = (prop: MissingProperty) => ({
-    title: prop.ruleName,
-    confidence: 82,
-    whyMatters: `The ${prop.propertyKey} property in ${prop.propertySet} is essential for ${prop.elementType} elements. This property enables proper classification, scheduling, and compliance checking across the model.`,
-    ifIgnored: `Missing ${prop.propertyKey} on ${prop.elementName} may cause issues in downstream applications including quantity takeoff, cost estimation, and regulatory compliance verification.`,
-});
+
 
 export function MissingPropertyTab() {
     const { currentProject } = useProject();
@@ -86,7 +80,7 @@ export function MissingPropertyTab() {
                                 key={idx}
                                 className={cn(
                                     "cursor-pointer transition-colors",
-                                    selectedProperty === prop && "bg-blue-50/50 dark:bg-blue-900/20",
+                                    selectedProperty === prop ? "bg-blue-50/50 dark:bg-blue-900/20" : "bg-white dark:bg-sidebar",
                                     "hover:bg-gray-50 dark:hover:bg-gray-700"
                                 )}
                                 onClick={() => setSelectedProperty(prop)}
@@ -119,7 +113,13 @@ export function MissingPropertyTab() {
             {/* AI Suggestions Panel */}
             <AISuggestionsPanel
                 selectedItem={selectedProperty ? { name: `${selectedProperty.elementName} - ${selectedProperty.propertyKey}` } : null}
-                suggestion={selectedProperty ? getMockSuggestion(selectedProperty) : null}
+                suggestion={selectedProperty ? {
+                    title: selectedProperty.ruleName,
+                    confidence: 0,
+                    whatIsWrong: selectedProperty.whatIsWrong,
+                    whyItMatters: selectedProperty.whyItMatters,
+                    whereToFixIt: selectedProperty.whereToFixIt
+                } : null}
                 onDismiss={() => setSelectedProperty(null)}
                 onAccept={() => setSelectedProperty(null)}
             />
