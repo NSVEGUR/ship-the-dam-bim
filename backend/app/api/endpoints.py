@@ -2,6 +2,7 @@
 API endpoints for Ship the BIM pipeline.
 
 POST /scan: upload IFC/CSV, profile, project_id; run pipeline; store in Supabase; return result.
+POST /fix: apply suggested fixes to IFC and return downloadable file.
 GET /profiles: list available profile_ids.
 """
 
@@ -15,9 +16,10 @@ import shutil
 import tempfile
 import os
 
-from app.pipeline.models import Profile, ScanResult
+from app.pipeline.models import Profile, ScanResult, MissingProperty, TerminologyMapping
 from app.pipeline.orchestrator import PipelineOrchestrator
 from app.pipeline.llm_providers import LLMChoice
+from app.pipeline.ifc_fixer import apply_fixes
 from app.storage.profiles import get_profile, list_profiles
 from app.storage.supabase_store import SupabaseStorage
 
@@ -101,3 +103,83 @@ async def run_scan(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix")
+async def fix_ifc(
+    file: UploadFile = File(...),
+    fix_data: str = Form(...),
+    language: str = Form("en"),
+):
+    """
+    Apply suggested fixes to an IFC file and return the corrected file.
+    
+    - file: Original IFC file
+    - fix_data: JSON string containing {"missing_properties": [...], "terminology": [...]}
+    - language: "en" for English suggestions, "de" for German
+    
+    Returns: Downloadable IFC file with fixes applied
+    """
+    try:
+        # Parse fix data
+        try:
+            data = json.loads(fix_data)
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid fix_data JSON: {str(e)}")
+        
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+        
+        try:
+            # Parse missing_properties
+            missing_props = []
+            for mp in data.get("missing_properties", []):
+                try:
+                    missing_props.append(MissingProperty(**mp))
+                except Exception:
+                    pass  # Skip invalid entries
+            
+            # Parse terminology
+            terminology = []
+            for t in data.get("terminology", []):
+                try:
+                    terminology.append(TerminologyMapping(**t))
+                except Exception:
+                    pass  # Skip invalid entries
+            
+            # Apply fixes
+            fixed_content = apply_fixes(
+                ifc_path=tmp_path,
+                missing_properties=missing_props,
+                terminology_mappings=terminology,
+                language=language,
+            )
+            
+            # Generate filename
+            original_name = file.filename or "model"
+            if original_name.lower().endswith(".ifc"):
+                original_name = original_name[:-4]
+            fixed_filename = f"{original_name}_fixed_{language}.ifc"
+            
+            # Return as downloadable file
+            return StreamingResponse(
+                io.BytesIO(fixed_content),
+                media_type="application/octet-stream",
+                headers={
+                    "Content-Disposition": f"attachment; filename={fixed_filename}",
+                    "Content-Length": str(len(fixed_content)),
+                },
+            )
+            
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fix failed: {str(e)}")
