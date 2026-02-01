@@ -7,6 +7,7 @@ enriches why_it_matters with human-readable explanations, suggests values where 
 
 from app.pipeline.models import IssueSummary
 import os
+import re
 from typing import List, Dict, Optional, Any, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ from app.pipeline.models import (
     TerminologyMapping,
     Profile,
 )
-from app.terminology.bsdd_client import get_allowed_values_for_property
+from app.terminology.bsdd_client import get_allowed_values_for_property, lookup_bsdd_terminology
 
 
 class ContextReasoner:
@@ -33,10 +34,10 @@ class ContextReasoner:
         """
         self.llm_provider = llm_provider
         
-        # Fallback to Gemini if no provider specified
+        # Fallback to OpenAI if no provider specified (Gemini quota often exhausted)
         if self.llm_provider is None:
-            from app.pipeline.llm_providers import GeminiProvider
-            provider = GeminiProvider()
+            from app.pipeline.llm_providers import OpenAIProvider
+            provider = OpenAIProvider()
             self.llm_provider = provider if provider.is_available() else None
 
     async def process(
@@ -91,6 +92,9 @@ class ContextReasoner:
             except Exception:
                 pass
 
+        # 5. Enrich terminology with suggested_de (German) using bSDD + AI
+        terminology = await self._enrich_terminology_with_german(terminology)
+
         return deduped, terminology, summary
 
     async def _generate_guidance_for_summaries(
@@ -115,13 +119,14 @@ class ContextReasoner:
             prompt_items.append(f"- Rule: {s.rule_name} (ID: {s.rule_id})")
 
         sys = (
-            "You are a BIM Manager. For each failed rule, provide 3 short distinct strings:\n"
-            "1. 'what_is_wrong': The error description.\n"
-            "2. 'why_it_matters': The impact.\n"
-            "3. 'where_to_fix_it': General location/method to fix.\n"
-            "Format: RuleID | what_is_wrong | why_it_matters | where_to_fix_it"
+            "You are an Elite BIM QA Special Advisor. Your objective is to provide deep technical and strategic guidance for failed model checks.\n\n"
+            "For each failed rule, provide 3 distinct strings:\n"
+            "1. 'what_is_wrong': A technical root-cause analysis (e.g., 'Parameter mapping mismatch in IFC export' or 'Family-level data omission').\n"
+            "2. 'why_it_matters': Strategic impact on Project lifecycle (e.g., 'Prevents automated quantity takeoff for 5D cost estimation' or 'Blocks COBie asset data handover').\n"
+            "3. 'where_to_fix_it': Actionable modeling instruction (e.g., 'Update Revit Shared Parameter file', 'Revise IFC Export Mapping Table', or 'Check Family Type properties').\n\n"
+            "Format exactly as: RuleID | what_is_wrong | why_it_matters | where_to_fix_it"
         )
-        user = "Rules:\n" + "\n".join(prompt_items)
+        user = "Analyze these failed rules:\n" + "\n".join(prompt_items)
 
         try:
             text = await self.llm_provider.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
@@ -132,6 +137,9 @@ class ContextReasoner:
                 parts = [p.strip() for p in line.split("|")]
                 if len(parts) >= 4:
                     rid = parts[0]
+                    # Clean up if ID has prefix
+                    if ":" in rid: rid = rid.split(":")[-1].strip()
+                    
                     guidance_map[rid] = {
                         "what_is_wrong": parts[1],
                         "why_it_matters": parts[2],
@@ -176,9 +184,12 @@ class ContextReasoner:
 
         # Batch: ask LLM to provide concise why_it_matters for each
         sys = (
-            "You are a BIM QA expert. For each issue, provide a 1–2 sentence "
-            "'why_it_matters' explaining the impact in submission/QA context. "
-            "Be concise and practical."
+            "You are a Senior BIM Coordinator and Data Scientist. For each issue, provide a concise "
+            "'why_it_matters' explanation. Focus on:\n"
+            "- Downstream impact on 4D (Schedule), 5D (Cost), and 6D (Sustainability).\n"
+            "- Interoperability issues (COBie compliance, LOD 400 requirements).\n"
+            "- Facility management and automated code checking impact.\n"
+            "Be professional, precise, and avoid generic statements."
         )
         items = []
         for i in to_enrich[:20]:  # Limit to avoid token overflow
@@ -210,3 +221,259 @@ class ContextReasoner:
             pass
 
         return issues
+
+    # --------------------------------------------------------------------------- #
+    # Terminology Enrichment: suggested_de (German) population
+    # --------------------------------------------------------------------------- #
+
+    async def _enrich_terminology_with_german(
+        self, terminology: List[TerminologyMapping]
+    ) -> List[TerminologyMapping]:
+        """
+        Populate suggested_de for all terminology entries using:
+        1. bSDD lookup (preferred - official translations)
+        2. AI batch translation (fallback - follows bSDD naming conventions)
+        """
+        if not terminology:
+            return terminology
+
+        # ---------- Phase 1: Try bSDD for each term missing suggested_de ----------
+        for t in terminology:
+            if t.suggested_de:
+                continue  # Already has German translation
+            
+            search_term = t.suggested_en or t.original or ""
+            if not search_term:
+                continue
+            
+            try:
+                result = lookup_bsdd_terminology(
+                    search_term=search_term,
+                    element_type=t.element_type,
+                )
+                if result:
+                    # Update German if found
+                    if result.get("de"):
+                        t.suggested_de = result["de"]
+                        t.confidence = 0.95  # High confidence for bSDD
+                    # Also improve English if we got a better one
+                    if result.get("en") and (not t.suggested_en or t.suggested_en == "Review"):
+                        t.suggested_en = result["en"]
+            except Exception:
+                pass
+
+        # ---------- Phase 2: AI batch for terms still missing suggested_de ----------
+        needs_german = [t for t in terminology if not t.suggested_de]
+        
+        if needs_german and self.llm_provider:
+            try:
+                await self._ai_batch_german_translation(needs_german)
+            except Exception:
+                pass
+
+        # ---------- Phase 3: Final fallback - translate English to German ----------
+        still_missing = [t for t in terminology if not t.suggested_de and t.suggested_en]
+        if still_missing and self.llm_provider:
+            try:
+                await self._ai_translate_to_german(still_missing)
+            except Exception:
+                pass
+
+        return terminology
+
+    async def _ai_batch_german_translation(
+        self, terms: List[TerminologyMapping]
+    ) -> None:
+        """
+        Use AI to provide German translations in batch.
+        Updates terms in-place.
+        """
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        if not terms or not self.llm_provider:
+            return
+
+        # Limit batch size to avoid token overflow
+        batch = terms[:30]
+
+        # Build the prompt with strict requirements
+        term_list = []
+        for i, t in enumerate(batch, 1):
+            original = t.original or ""
+            english = t.suggested_en or original
+            elem_type = t.element_type or "Unknown"
+            term_list.append(f"{i}. {original} | {english} | {elem_type}")
+
+        system_prompt = """You are a Senior BIM Terminology Expert fluent in English and German.
+You specialize in buildingSMART Data Dictionary (bSDD) and IFC standards.
+
+Your task is to provide precise German translations for BIM properties and entities.
+
+RULES:
+1. Use official buildingSMART/IFC German terminology (e.g., DIN EN ISO 16739).
+2. For properties, use standard DIN/VDI construction terms.
+3. Keep technical prefixes like "Ifc" unchanged.
+4. Ensure the German term is technically accurate for the given element_type.
+5. NEVER leave the German column empty.
+
+Format: Original | English | German
+Example:
+FireRating | Fire Rating | Feuerwiderstandsklasse
+IfcWall | Wall | Wand
+LoadBearing | Load Bearing | Tragend"""
+
+        user_prompt = f"""Translate these BIM terms to German (strictly follow bSDD standards):
+
+{chr(10).join(term_list)}
+
+IMPORTANT: Provide exactly one line per term with 3 columns separated by |. Do not add any preamble or explanations."""
+
+        try:
+            response = await self.llm_provider.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt)
+            ])
+            
+            self._parse_german_translations(response, batch)
+            
+        except Exception:
+            pass
+
+    def _parse_german_translations(
+        self, response: str, terms: List[TerminologyMapping]
+    ) -> None:
+        """
+        Parse AI response and update terms with German translations.
+        Handles various response formats robustly.
+        """
+        if not response:
+            return
+
+        lines = [l.strip() for l in response.split("\n") if l.strip()]
+        
+        # Build a mapping from index/original to German
+        translations: Dict[int, str] = {}
+        original_to_german: Dict[str, str] = {}
+        
+        for line in lines:
+            # Skip header lines
+            if line.startswith("#") or line.startswith("Number") or "---" in line:
+                continue
+            
+            # Try to parse "N. Original | English | German" format
+            # First, extract the number prefix if present
+            line_content = line
+            line_idx = None
+            
+            # Match patterns like "1.", "1)", "1:"
+            import re
+            num_match = re.match(r'^(\d+)[.\):\s]+(.*)$', line)
+            if num_match:
+                line_idx = int(num_match.group(1)) - 1  # Convert to 0-based
+                line_content = num_match.group(2).strip()
+            
+            # Split by pipe
+            parts = [p.strip() for p in line_content.split("|")]
+            
+            # We need at least 2 parts, ideally 3
+            if len(parts) >= 3:
+                original = parts[0]
+                english = parts[1]
+                german = parts[2]
+                
+                # Clean up German - remove quotes, trailing punctuation
+                german = german.strip().strip('"\'').strip()
+                
+                if german and german.lower() not in ("none", "n/a", "-", ""):
+                    if line_idx is not None and 0 <= line_idx < len(terms):
+                        translations[line_idx] = german
+                    original_to_german[original.lower()] = german
+                    
+            elif len(parts) == 2:
+                # Maybe "English | German" format
+                english = parts[0]
+                german = parts[1].strip().strip('"\'').strip()
+                if german and german.lower() not in ("none", "n/a", "-", ""):
+                    original_to_german[english.lower()] = german
+
+        # Apply translations to terms
+        for idx, t in enumerate(terms):
+            if t.suggested_de:
+                continue  # Already has German
+            
+            # Try by index first
+            if idx in translations:
+                t.suggested_de = translations[idx]
+                t.confidence = 0.85
+                continue
+            
+            # Try by original match
+            original_key = (t.original or "").lower()
+            if original_key in original_to_german:
+                t.suggested_de = original_to_german[original_key]
+                t.confidence = 0.85
+                continue
+            
+            # Try by English match
+            english_key = (t.suggested_en or "").lower()
+            if english_key in original_to_german:
+                t.suggested_de = original_to_german[english_key]
+                t.confidence = 0.80
+
+    async def _ai_translate_to_german(
+        self, terms: List[TerminologyMapping]
+    ) -> None:
+        """
+        Final fallback: directly translate English terms to German.
+        Used when batch parsing failed for some terms.
+        """
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        if not terms or not self.llm_provider:
+            return
+
+        # Smaller batch for direct translation
+        batch = terms[:20]
+        
+        english_terms = [t.suggested_en for t in batch if t.suggested_en]
+        if not english_terms:
+            return
+
+        system_prompt = """You are a German BIM terminology translator.
+Translate each English BIM/construction term to German.
+Use official buildingSMART/IFC German terminology.
+Output one German term per line, in the same order as input.
+NEVER output empty lines or 'None'."""
+
+        user_prompt = "Translate to German:\n" + "\n".join(english_terms)
+
+        try:
+            response = await self.llm_provider.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt)
+            ])
+            
+            # Parse simple line-by-line response
+            german_lines = [l.strip() for l in response.split("\n") if l.strip()]
+            
+            term_idx = 0
+            for german in german_lines:
+                if term_idx >= len(batch):
+                    break
+                
+                # Skip if it looks like a header or instruction
+                if german.startswith("#") or ":" in german[:20]:
+                    continue
+                
+                # Clean up
+                german = german.strip().strip('"\'').strip()
+                german = re.sub(r'^\d+[.\)]\s*', '', german)  # Remove numbering
+                
+                if german and german.lower() not in ("none", "n/a", "-", ""):
+                    if not batch[term_idx].suggested_de:
+                        batch[term_idx].suggested_de = german
+                        batch[term_idx].confidence = 0.75
+                    term_idx += 1
+                    
+        except Exception:
+            pass

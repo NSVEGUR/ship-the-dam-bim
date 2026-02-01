@@ -2,6 +2,7 @@
 API endpoints for Ship the BIM pipeline.
 
 POST /scan: upload IFC/CSV, profile, project_id; run pipeline; store in Supabase; return result.
+POST /fix: apply suggested fixes to IFC and return downloadable file.
 GET /profiles: list available profile_ids.
 """
 
@@ -15,9 +16,10 @@ import shutil
 import tempfile
 import os
 
-from app.pipeline.models import Profile, ScanResult
+from app.pipeline.models import Profile, ScanResult, MissingProperty, TerminologyMapping
 from app.pipeline.orchestrator import PipelineOrchestrator
 from app.pipeline.llm_providers import LLMChoice
+from app.pipeline.ifc_fixer import apply_fixes
 from app.storage.profiles import get_profile, list_profiles
 from app.storage.supabase_store import SupabaseStorage
 
@@ -51,8 +53,6 @@ async def run_scan(
     - profile_id: key from stored profiles (use if profile_data not set)
     - project_id: ID of the project in Supabase (must exist)
     - llm_provider: Base LLM for reasoning - "gemini", "minimax", or "openai"
-    
-    Note: Manus synthesis runs automatically if MANUS_API_KEY is set.
     """
     try:
         # Resolve profile
@@ -101,3 +101,71 @@ async def run_scan(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix")
+async def fix_ifc(
+    file: UploadFile = File(...),
+    project_id: int = Form(123),
+):
+    """
+    Apply suggested fixes to an IFC file using data from database.
+    
+    - file: Original IFC file
+    - project_id: Project ID to fetch latest report
+    
+    Returns: Downloadable IFC file with fixes applied
+    """
+    try:
+        store = SupabaseStorage()
+
+        report_id = store.get_latest_report_id(project_id)
+        if not report_id:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No reports found for project_id: {project_id}. Run a scan first."
+            )
+        
+        # Fetch data from database
+        missing_props = store.get_missing_properties_by_report(report_id)
+        terminology = store.get_terminology_by_report(report_id)
+        
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+        
+        try:
+            # Apply fixes
+            fixed_content = apply_fixes(
+                ifc_path=tmp_path,
+                missing_properties=missing_props,
+                terminology_mappings=terminology,
+            )
+            
+            # Generate filename
+            original_name = file.filename or "model"
+            if original_name.lower().endswith(".ifc"):
+                original_name = original_name[:-4]
+            fixed_filename = f"{original_name}_fixed.ifc"
+            
+            # Return as downloadable file
+            return StreamingResponse(
+                io.BytesIO(fixed_content),
+                media_type="application/octet-stream",
+                headers={
+                    "Content-Disposition": f"attachment; filename={fixed_filename}",
+                    "Content-Length": str(len(fixed_content)),
+                },
+            )
+            
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fix failed: {str(e)}")

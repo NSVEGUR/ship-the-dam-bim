@@ -53,7 +53,6 @@ class SupabaseStorage:
                 "why_it_matters": prop.why_it_matters,
                 "what_is_wrong": prop.what_is_wrong,
                 "where_to_fix_it": prop.where_to_fix_it,
-                "holistic_guidance": prop.holistic_guidance,
             })
         
         # Insert in chunks of 1000 to avoid request size limits
@@ -109,33 +108,95 @@ class SupabaseStorage:
                 "what_is_wrong": s.what_is_wrong,
                 "why_it_matters": s.why_it_matters,
                 "where_to_fix_it": s.where_to_fix_it,
-                "holistic_guidance": s.holistic_guidance,
             })
         
         self.client.table("issue_summaries").insert(batch_data).execute()
 
 
 
-    def get_latest_report_terminology(self, project_id: int) -> Dict[str, str] | None:
-        """
-        Fetch terminology from the most recent report for this project.
-        Returns: Dict[original_value, suggested_value]
-        """
-        # 1. Get latest report_id
-        # Supabase API: order by created_at desc, limit 1
+    def get_latest_report_id(self, project_id: int) -> Optional[int]:
+        """Get the latest report_id for a project."""
         reports = self.client.table("reports")\
             .select("report_id")\
             .eq("project_id", project_id)\
             .order("created_at", desc=True)\
             .limit(1)\
             .execute()
+        
+        if reports.data:
+            return reports.data[0]["report_id"]
+        return None
 
-        if not reports.data:
+    def get_missing_properties_by_report(self, report_id: int) -> List[MissingProperty]:
+        """Fetch all missing_properties for a report."""
+        result = self.client.table("missing_properties")\
+            .select("*")\
+            .eq("report_id", report_id)\
+            .execute()
+        
+        properties = []
+        for row in result.data:
+            try:
+                properties.append(MissingProperty(
+                    severity=row.get("serverity", "MAJOR"),  # Note: typo in DB schema
+                    issue_type=row.get("issue_type", "UNKNOWN"),
+                    rule_id=row.get("rule_id", ""),
+                    rule_name=row.get("rule_name", ""),
+                    ifc_guid=row.get("ifc_guid", ""),
+                    element_type=row.get("element_type", ""),
+                    element_name=row.get("element_name"),
+                    object_type=row.get("object_type"),
+                    level=row.get("level"),
+                    property_set=row.get("property_set"),
+                    property_key=row.get("property_key"),
+                    expected=row.get("expected"),
+                    current=row.get("current"),
+                    suggested_value=row.get("suggested_value"),
+                    confidence=row.get("confidence", 1.0),
+                    why_it_matters=row.get("why_it_matters"),
+                    what_is_wrong=row.get("what_is_wrong"),
+                    where_to_fix_it=row.get("where_to_fix_it"),
+                ))
+            except Exception:
+                pass  # Skip invalid rows
+        return properties
+
+    def get_terminology_by_report(self, report_id: int) -> List[TerminologyMapping]:
+        """Fetch all terminology_mappings for a report."""
+        result = self.client.table("terminology_mappings")\
+            .select("*")\
+            .eq("report_id", report_id)\
+            .execute()
+        
+        mappings = []
+        for row in result.data:
+            try:
+                mappings.append(TerminologyMapping(
+                    entry_id=row.get("entry_id", ""),
+                    scope=row.get("scope", "PROPERTY_VALUE"),
+                    element_type=row.get("element_type"),
+                    ifc_guid=row.get("ifc_guid"),
+                    original=row.get("original", ""),
+                    canonical_key=row.get("canonical_key"),
+                    suggested_en=row.get("suggested_en"),
+                    suggested_de=row.get("suggested_de"),
+                    confidence=row.get("confidence", 1.0),
+                    status=row.get("status", "PROPOSED"),
+                ))
+            except Exception:
+                pass  # Skip invalid rows
+        return mappings
+
+    def get_latest_report_terminology(self, project_id: int) -> Dict[str, str] | None:
+        """
+        Fetch terminology from the most recent report for this project.
+        Returns: Dict[original_value, suggested_value]
+        """
+        latest_report_id = self.get_latest_report_id(project_id)
+        if not latest_report_id:
             return None
 
-        latest_report_id = reports.data[0]["report_id"]
-
-        # 2. Get accepted/suggested terms from terminology_mappings
+        # Get accepted/suggested terms from terminology_mappings
         terms = self.client.table("terminology_mappings")\
             .select("original, suggested_en")\
             .eq("report_id", latest_report_id)\

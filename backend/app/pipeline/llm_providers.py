@@ -2,7 +2,6 @@
 LLM Provider abstraction layer.
 
 Supports Gemini (default), MiniMax M2.1, and OpenAI.
-Manus is handled separately in manus_synthesis.py for holistic analysis.
 """
 
 import os
@@ -12,10 +11,10 @@ from typing import List, Dict, Any, Optional, Literal
 
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
-GEMINI_MODEL = "gemini-3-pro"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 OPEN_AI_MODEL = "gpt-5.2"
-MINI_MAX_MODEL = "MiniMax-M2.1-Pro"
-MINI_MAX_API_URL = "https://api.minimax.chat/v1"
+MINI_MAX_MODEL = "M2-her"
+MINI_MAX_API_URL = "https://api.minimax.io/v1"
 
 
 class LLMProvider(ABC):
@@ -77,45 +76,48 @@ class MiniMaxProvider(LLMProvider):
         if not self._available:
             raise RuntimeError("MiniMax provider not configured")
         
-        # Convert LangChain messages to Anthropic/MiniMax format
-        formatted_messages = []
-        system_content = ""
-        
+       # Format LangChain messages to MiniMax HTTP format
+        payload_messages: list[dict[str, str]] = []
         for msg in messages:
+            role = None
             if isinstance(msg, SystemMessage):
-                system_content = msg.content
+                role = "system"
             elif isinstance(msg, HumanMessage):
-                formatted_messages.append({"role": "user", "content": msg.content})
+                role = "user"
             else:
-                formatted_messages.append({"role": "assistant", "content": msg.content})
-        
-        # MiniMax uses Anthropic-compatible API
+                role = "assistant"
+            payload_messages.append({
+                "role": role,
+                "name": role.title(), 
+                "content": msg.content,
+            })
+
         payload = {
-            "model": MINI_MAX_MODEL,
-            "max_tokens": 4096,
-            "messages": formatted_messages,
+            "model": MINI_MAX_MODEL, 
+            "messages": payload_messages,
+            "temperature": 0.7,
+            "top_p": 0.95,
         }
-        if system_content:
-            payload["system"] = system_content
-        
+
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
-                f"{self.base_url}/messages",
+                f"{self.base_url}/text/chatcompletion_v2",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
-                    "anthropic-version": "2023-06-01",
                 },
                 json=payload,
             )
             resp.raise_for_status()
             data = resp.json()
-            
-            # Extract text from Anthropic-style response
-            content = data.get("content", [])
-            if content and isinstance(content, list):
-                return content[0].get("text", "")
-            return str(data)
+
+        # Extract the text reply
+        choices = data.get("choices", [])
+        if not choices:
+            return ""
+
+        # MiniMax returns the generated message under `choices[0].message.content`
+        return choices[0].get("message", {}).get("content", "")
     
     def is_available(self) -> bool:
         return self._available

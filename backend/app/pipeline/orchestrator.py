@@ -24,7 +24,6 @@ from app.pipeline.deterministic import create_deterministic_scanner
 from app.pipeline.ai import AIAgent
 from app.pipeline.reasoner import ContextReasoner
 from app.pipeline.llm_providers import get_llm_provider, LLMChoice
-from app.pipeline.manus_synthesis import ManusSynthesis
 from app.storage.supabase_store import SupabaseStorage
 
 class PipelineOrchestrator:
@@ -48,8 +47,7 @@ class PipelineOrchestrator:
         except RuntimeError:
             self._llm_provider = None
         
-        # Manus synthesis (always on if available)
-        self.manus = ManusSynthesis()
+
         
         self.det_scanner = create_deterministic_scanner(file_path)
         self.ai_scanner = AIAgent(file_path)
@@ -105,19 +103,6 @@ class PipelineOrchestrator:
 
         # 7. Calculate Scores
         scores = self._calculate_scores(summary_final_raw)
-
-        # 8. Manus Per-Row Enrichment (always runs if available)
-        if self.manus.is_available():
-            try:
-                # Enrich each issue with holistic guidance
-                issues_final = await self.manus.enrich_issues(issues_final, issue_summaries)
-                # Enrich each summary with holistic guidance
-                issue_summaries = await self.manus.enrich_summaries(issue_summaries)
-                # Add adjusted scores
-                scores = await self.manus.adjust_scores(scores, issue_summaries)
-                print("Generated Manus Synthesis: ", scores)
-            except Exception:
-                pass
 
         result = ScanResult(
             missing_properties=issues_final,

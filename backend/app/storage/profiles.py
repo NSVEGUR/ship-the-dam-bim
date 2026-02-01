@@ -11,8 +11,8 @@ from app.pipeline.models import Profile, ProfileRule, Severity
 
 # Default profiles for local storage
 DEFAULT_PROFILES: Dict[str, dict] = {
-    "default_safety": {
-        "name": "Default Safety Profile",
+    "Germany Demo Profile": {
+        "name": "Germany Demo Profile",
         "version": "1.0",
         "rules": [
 
