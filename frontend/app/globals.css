@@ -296,3 +296,57 @@
   right: 30%;
   animation-delay: 0.8s;
 }
+
+/* AI Scanning Overlay Animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  25% {
+    background-position: 100% 0%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  75% {
+    background-position: 0% 100%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.scanning-overlay-bg {
+  background: linear-gradient(135deg,
+      #fce7f3 0%,
+      #f5d0fe 15%,
+      #e9d5ff 25%,
+      #c4b5fd 35%,
+      #a78bfa 45%,
+      #8b5cf6 50%,
+      #a78bfa 55%,
+      #c4b5fd 65%,
+      #ddd6fe 75%,
+      #f5d0fe 85%,
+      #fce7f3 100%);
+  background-size: 400% 400%;
+  animation:
+    gradient-shift 8s ease infinite,
+    pulse-glow 3s ease-in-out infinite;
+}
