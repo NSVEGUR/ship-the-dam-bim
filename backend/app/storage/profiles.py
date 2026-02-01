@@ -147,7 +147,7 @@ DEFAULT_PROFILES: Dict[str, dict] = {
             },
         ],
     }
-},
+}
 
 
 _profile_store: Dict[str, Profile] = {}
