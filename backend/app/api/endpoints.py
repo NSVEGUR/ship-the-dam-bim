@@ -51,8 +51,6 @@ async def run_scan(
     - profile_id: key from stored profiles (use if profile_data not set)
     - project_id: ID of the project in Supabase (must exist)
     - llm_provider: Base LLM for reasoning - "gemini", "minimax", or "openai"
-    
-    Note: Manus synthesis runs automatically if MANUS_API_KEY is set.
     """
     try:
         # Resolve profile

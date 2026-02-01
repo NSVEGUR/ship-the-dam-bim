@@ -85,7 +85,7 @@ project_id = st.number_input("Project ID (Numeric)", min_value=1, value=123, ste
 
 # LLM Provider Selection
 st.sidebar.header("AI Configuration")
-llm_options = {"gemini": "Gemini (Default)", "minimax": "MiniMax M2.1", "openai": "OpenAI GPT-4o"}
+llm_options = {"gemini": "Gemini", "minimax": "MiniMax", "openai": "OpenAI"}
 llm_provider = st.sidebar.selectbox(
     "Base LLM Provider",
     options=list(llm_options.keys()),
