@@ -90,7 +90,6 @@ def apply_fixes(
     ifc_path: str,
     missing_properties: List[MissingProperty],
     terminology_mappings: List[TerminologyMapping],
-    language: str = "en",
 ) -> bytes:
     """
     Apply suggested fixes to an IFC file and return the modified content.
@@ -99,7 +98,6 @@ def apply_fixes(
         ifc_path: Path to the original IFC file
         missing_properties: List of issues with suggested_value to apply
         terminology_mappings: List of terminology with suggested_en/suggested_de
-        language: "en" for English suggestions, "de" for German
         
     Returns:
         bytes: The modified IFC file content
@@ -146,12 +144,7 @@ def apply_fixes(
         if not element:
             continue
         
-        # Determine which suggestion to use based on language
-        suggested_value = None
-        if language == "de" and term.suggested_de:
-            suggested_value = term.suggested_de
-        elif term.suggested_en:
-            suggested_value = term.suggested_en
+        suggested_value = term.suggested_de
         
         if not suggested_value:
             continue
@@ -202,7 +195,6 @@ def apply_fixes(
 def apply_fixes_from_scan_result(
     ifc_path: str,
     scan_result: Dict[str, Any],
-    language: str = "en",
 ) -> bytes:
     """
     Convenience function to apply fixes from a scan result dict.
@@ -210,7 +202,6 @@ def apply_fixes_from_scan_result(
     Args:
         ifc_path: Path to the original IFC file
         scan_result: The scan result containing missing_properties and terminology
-        language: "en" or "de"
         
     Returns:
         bytes: The modified IFC file content
@@ -231,4 +222,4 @@ def apply_fixes_from_scan_result(
         elif isinstance(t, TerminologyMapping):
             terminology.append(t)
     
-    return apply_fixes(ifc_path, missing_props, terminology, language)
+    return apply_fixes(ifc_path, missing_props, terminology)

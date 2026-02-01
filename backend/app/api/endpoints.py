@@ -106,31 +106,25 @@ async def run_scan(
 @router.post("/fix")
 async def fix_ifc(
     file: UploadFile = File(...),
-    project_id: int = Form(...),
-    report_id: Optional[int] = Form(None),
-    language: str = Form("en"),
+    project_id: int = Form(123),
 ):
     """
     Apply suggested fixes to an IFC file using data from database.
     
     - file: Original IFC file
     - project_id: Project ID to fetch latest report
-    - report_id: Optional specific report ID (if not provided, uses latest)
-    - language: "en" for English suggestions, "de" for German
     
     Returns: Downloadable IFC file with fixes applied
     """
     try:
         store = SupabaseStorage()
-        
-        # Get report_id (use provided or fetch latest)
+
+        report_id = store.get_latest_report_id(project_id)
         if not report_id:
-            report_id = store.get_latest_report_id(project_id)
-            if not report_id:
-                raise HTTPException(
-                    status_code=404, 
-                    detail=f"No reports found for project_id: {project_id}. Run a scan first."
-                )
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No reports found for project_id: {project_id}. Run a scan first."
+            )
         
         # Fetch data from database
         missing_props = store.get_missing_properties_by_report(report_id)
@@ -147,14 +141,13 @@ async def fix_ifc(
                 ifc_path=tmp_path,
                 missing_properties=missing_props,
                 terminology_mappings=terminology,
-                language=language,
             )
             
             # Generate filename
             original_name = file.filename or "model"
             if original_name.lower().endswith(".ifc"):
                 original_name = original_name[:-4]
-            fixed_filename = f"{original_name}_fixed_{language}.ifc"
+            fixed_filename = f"{original_name}_fixed.ifc"
             
             # Return as downloadable file
             return StreamingResponse(
