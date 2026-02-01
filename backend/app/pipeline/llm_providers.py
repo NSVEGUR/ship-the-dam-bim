@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Optional, Literal
 
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
-GEMINI_MODEL = "gemini-3-flash-preview"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 OPEN_AI_MODEL = "gpt-5.2"
 MINI_MAX_MODEL = "MiniMax-M2.1-Pro"
 MINI_MAX_API_URL = "https://api.minimax.chat/v1"
