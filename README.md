@@ -323,7 +323,7 @@ This project is licensed under the MIT License.
 * **Mia** 🧙‍♀️✨ (Making magic happen)
 * **Irfan** 🚀🔥 (Shipping at lightspeed)
 * **Nagasai** 🧠💡 (The Big Brain)
-* **Lewin** 🥷👾 (The Code Ninja)
+* **Levin** 🥷👾 (The Code Ninja)
 * **Ozan** ☕💻 (Powered by caffeine)
 
 
