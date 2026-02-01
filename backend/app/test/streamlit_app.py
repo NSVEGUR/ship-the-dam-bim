@@ -93,9 +93,25 @@ llm_provider = st.sidebar.selectbox(
     help="Select the LLM"
 )
 
+# Initialize session state for scan results
+if "scan_result" not in st.session_state:
+    st.session_state.scan_result = None
+if "uploaded_file_bytes" not in st.session_state:
+    st.session_state.uploaded_file_bytes = None
+if "uploaded_file_name" not in st.session_state:
+    st.session_state.uploaded_file_name = None
+if "project_id" not in st.session_state:
+    st.session_state.project_id = None
+
 if st.button("Run Scan", type="primary", disabled=not uploaded_file):
     with st.spinner("Scanning... this may take a moment (AI reasoning in progress)..."):
         try:
+            # Store file for later use in fix
+            uploaded_file.seek(0)
+            st.session_state.uploaded_file_bytes = uploaded_file.read()
+            st.session_state.uploaded_file_name = uploaded_file.name
+            uploaded_file.seek(0)
+            
             files = {"file": (uploaded_file.name, uploaded_file, "application/octet-stream")}
             data = {
                 "project_id": str(project_id),
@@ -113,6 +129,8 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
 
             if response.status_code == 200:
                 result = response.json()
+                st.session_state.scan_result = result  # Store for fix endpoint
+                st.session_state.project_id = project_id  # Store project_id for fix
                 st.success("Scan Complete!")
 
                 st.header("1. Readiness Scores")
@@ -201,3 +219,56 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
+
+# ---------- Section 5: Download Fixed IFC ----------
+st.markdown("---")
+st.header("5. Download Fixed IFC")
+
+if st.session_state.scan_result and st.session_state.uploaded_file_bytes and st.session_state.project_id:
+    st.info("Apply all suggested fixes (including German terminology) to your IFC file and download the corrected version.")
+    
+    if st.button("🔧 Generate & Download Fixed IFC", type="primary"):
+        with st.spinner("Applying fixes to IFC file..."):
+            try:
+                # Call fix endpoint with project_id (fetches data from database)
+                # Uses German (de) as default language for terminology
+                files = {
+                    "file": (
+                        st.session_state.uploaded_file_name,
+                        st.session_state.uploaded_file_bytes,
+                        "application/octet-stream"
+                    )
+                }
+                data = {
+                    "project_id": str(st.session_state.project_id),
+                    "language": "de",  # Default to German
+                }
+                
+                response = requests.post(f"{API_URL}/fix", files=files, data=data)
+                
+                if response.status_code == 200:
+                    # Get filename from header or generate one
+                    content_disp = response.headers.get("Content-Disposition", "")
+                    if "filename=" in content_disp:
+                        filename = content_disp.split("filename=")[-1].strip('"')
+                    else:
+                        base_name = st.session_state.uploaded_file_name or "model"
+                        if base_name.lower().endswith(".ifc"):
+                            base_name = base_name[:-4]
+                        filename = f"{base_name}_fixed.ifc"
+                    
+                    st.success("IFC file fixed successfully!")
+                    st.download_button(
+                        "⬇️ Download Fixed IFC File",
+                        response.content,
+                        filename,
+                        "application/octet-stream",
+                        key="download-fixed-ifc",
+                    )
+                else:
+                    st.error(f"Fix failed: {response.text}")
+                    
+            except Exception as e:
+                st.error(f"Error generating fixed IFC: {str(e)}")
+else:
+    st.warning("Run a scan first to enable IFC fixing.")
