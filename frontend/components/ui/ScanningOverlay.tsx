@@ -55,7 +55,7 @@ export function ScanningOverlay({ isVisible }: ScanningOverlayProps) {
             <div className="ai-sparkle" style={{ top: '50%', left: '50%' }} />
 
             {/* Subtle glass overlay for better content visibility */}
-            <div className="absolute inset-0 bg-white/40 dark:bg-gray-900/40 backdrop-blur-[2px]" />
+            <div className="absolute inset-0 bg-white/40 dark:bg-background/40 backdrop-blur-[2px]" />
 
             {/* Centered content */}
             <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
@@ -68,7 +68,7 @@ export function ScanningOverlay({ isVisible }: ScanningOverlayProps) {
                         repeat: Infinity,
                         ease: "easeInOut",
                     }}
-                    className="w-20 h-20 rounded-2xl bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center mb-6 shadow-lg relative overflow-hidden"
+                    className="w-20 h-20 rounded-2xl bg-white dark:bg-card border border-indigo-100 dark:border-indigo-800 flex items-center justify-center mb-6 shadow-lg relative overflow-hidden"
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-pink-50/20 dark:from-indigo-900/50 dark:via-purple-900/30 dark:to-pink-900/20" />
                     <Sparkles className="h-10 w-10 text-indigo-500 dark:text-indigo-400 relative z-10 animate-pulse" />
@@ -96,10 +96,10 @@ export function ScanningOverlay({ isVisible }: ScanningOverlayProps) {
                         <motion.div
                             key={i}
                             className={`w-2 h-2 rounded-full transition-colors duration-300 ${i === currentStep
-                                    ? 'bg-indigo-500 dark:bg-indigo-400'
-                                    : i < currentStep
-                                        ? 'bg-indigo-300 dark:bg-indigo-600'
-                                        : 'bg-gray-300 dark:bg-gray-600'
+                                ? 'bg-indigo-500 dark:bg-indigo-400'
+                                : i < currentStep
+                                    ? 'bg-indigo-300 dark:bg-indigo-600'
+                                    : 'bg-gray-300 dark:bg-gray-600'
                                 }`}
                             animate={i === currentStep ? {
                                 scale: [1, 1.3, 1],

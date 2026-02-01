@@ -1,13 +1,14 @@
 "use client";
 
-import { Sparkles, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AISuggestion {
     title: string;
     confidence: number;
-    whyMatters: string;
-    ifIgnored: string;
+    whatIsWrong?: string;
+    whyItMatters?: string;
+    whereToFixIt?: string;
 }
 
 interface AISuggestionsPanelProps {
@@ -45,7 +46,7 @@ export function AISuggestionsPanel({
                 <GeminiBackground />
                 <div className="ai-gemini-content p-5">
                     <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-700 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center mb-5 shadow-sm relative overflow-hidden">
+                        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center mb-5 shadow-sm relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-pink-50/20 dark:from-indigo-900/50 dark:via-purple-900/30 dark:to-pink-900/20" />
                             <Sparkles className="h-8 w-8 text-indigo-500 dark:text-indigo-400 relative z-10" />
                         </div>
@@ -134,7 +135,7 @@ export function AISuggestionsPanel({
                         <Sparkles className="h-3.5 w-3.5" />
                         AI-assisted suggestion
                     </div>
-                    <span className="text-gray-500 dark:text-gray-400">{suggestion.confidence}%</span>
+
                 </div>
 
                 {/* Selected item below */}
@@ -145,13 +146,18 @@ export function AISuggestionsPanel({
 
                 <div className="space-y-3">
                     <div>
-                        <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">Why this matters</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whyMatters}</p>
+                        <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">What is wrong</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whatIsWrong || "No information available."}</p>
                     </div>
 
                     <div>
-                        <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">If ignored</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.ifIgnored}</p>
+                        <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">Why it matters</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whyItMatters || "No information available."}</p>
+                    </div>
+
+                    <div>
+                        <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-gray-100">Where to fix it</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{suggestion.whereToFixIt || "No information available."}</p>
                     </div>
 
                     <div className="flex items-center justify-center gap-4 pt-2">

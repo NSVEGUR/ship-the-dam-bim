@@ -18,7 +18,7 @@ export function IssuesSummaryCard() {
     const infoPercent = total > 0 ? (info / total) * 100 : 0;
 
     return (
-        <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-full">
+        <Card className="bg-white dark:bg-card border border-gray-200 dark:border-gray-700 h-full">
             <CardHeader className="pb-0 pt-3 px-4">
                 <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Issues Summary</CardTitle>
             </CardHeader>

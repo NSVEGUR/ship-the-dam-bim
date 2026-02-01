@@ -23,7 +23,7 @@ export function ReadinessScoreCard() {
     const isReady = score >= 95;
 
     return (
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-white dark:bg-card border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-0 pt-3 px-4">
                 <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     Readiness Score

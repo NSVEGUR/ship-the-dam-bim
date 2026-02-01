@@ -31,7 +31,7 @@ export function ReadinessScoreHeader() {
     const barColor = getBgColorClass(score);
 
     return (
-        <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <Card className="bg-white dark:bg-card border border-gray-200 dark:border-gray-700">
             <CardContent className="p-6">
                 {/* Header */}
                 <div className="mb-4">

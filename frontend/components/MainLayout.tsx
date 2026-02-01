@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Ship, LayoutDashboard, FileCheck, Settings, User } from "lucide-react";
+import { LayoutDashboard, FileCheck, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -19,21 +19,29 @@ export function MainLayout({ children }: MainLayoutProps) {
     const pathname = usePathname();
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <div className="min-h-screen bg-gray-50 dark:bg-background flex">
             {/* Sidebar */}
-            <aside className="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+            <aside className="w-56 bg-white dark:bg-background border-r border-gray-200 dark:border-sidebar-border flex flex-col">
                 {/* Logo */}
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="p-3 border-b border-gray-200 dark:border-sidebar-border">
                     <Link href="/" className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                            <Ship className="h-4 w-4" />
-                        </div>
-                        <span className="text-sm">Ship the BIM</span>
+                        {/* Light Mode Logo */}
+                        <img
+                            src="/logo-light.svg"
+                            alt="Ship the BIM"
+                            className="h-8 w-auto dark:hidden"
+                        />
+                        {/* Dark Mode Logo */}
+                        <img
+                            src="/logo-dark.svg"
+                            alt="Ship the BIM"
+                            className="h-8 w-auto hidden dark:block"
+                        />
                     </Link>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-3 space-y-1">
+                <nav className="flex-1 p-3 space-y-6 mt-14">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href;
@@ -42,13 +50,12 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded-lg transition-colors",
+                                    "flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-all",
                                     isActive
-                                        ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                                        : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                )}
-                            >
-                                <Icon className="h-4 w-4" />
+                                        ? "bg-emerald-50 dark:bg-[rgba(240,147,98,0.2)] text-emerald-700 dark:text-[#F09362] shadow-sm"
+                                        : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-card dark:hover:shadow-sm"
+                                )}>
+                                <Icon className="h-5 w-5" />
                                 {item.label}
                             </Link>
                         );
@@ -56,19 +63,19 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </nav>
 
                 {/* Bottom section: Settings + User */}
-                <div className="border-t border-gray-200 dark:border-gray-700">
+                <div className="border-t border-gray-200 dark:border-sidebar-border">
                     {/* Settings */}
                     <div className="p-3 pb-0">
                         <Link
                             href="/settings"
                             className={cn(
-                                "flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded-lg transition-colors",
+                                "flex items-center gap-2 px-4 py-3 text-base font-medium rounded-xl transition-all",
                                 pathname === "/settings"
-                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    ? "bg-emerald-50 dark:bg-sidebar-primary/20 text-emerald-700 dark:text-sidebar-primary shadow-sm"
+                                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-card dark:hover:shadow-sm"
                             )}
                         >
-                            <Settings className="h-4 w-4" />
+                            <Settings className="h-5 w-5" />
                             Settings
                         </Link>
                     </div>
@@ -77,10 +84,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <Link
                             href="/user"
                             className={cn(
-                                "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors",
+                                "flex items-center gap-2 px-4 py-3 rounded-xl transition-all",
                                 pathname === "/user"
-                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-card dark:hover:shadow-sm"
                             )}
                         >
                             <Avatar className="h-7 w-7">
