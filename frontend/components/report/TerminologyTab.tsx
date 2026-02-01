@@ -16,7 +16,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useProject, TerminologyMapping } from "@/components/ProjectContext";
-import { AISuggestionsPanel } from "./AISuggestionsPanel";
 import { StyledTableContainer } from "./StyledTableContainer";
 
 // Type badge component
@@ -287,19 +286,7 @@ export function TerminologyTab() {
                 </Table>
             </StyledTableContainer>
 
-            {/* AI Suggestions Panel */}
-            <AISuggestionsPanel
-                selectedItem={selectedMapping ? { name: selectedMapping.original } : null}
-                suggestion={selectedMapping ? {
-                    title: selectedMapping.original,
-                    confidence: selectedMapping.confidence,
-                    whatIsWrong: selectedMapping.whatIsWrong,
-                    whyItMatters: selectedMapping.whyItMatters,
-                    whereToFixIt: selectedMapping.whereToFixIt
-                } : null}
-                onDismiss={handleAIDismiss}
-                onAccept={handleAIAccept}
-            />
+
         </div>
     );
 }

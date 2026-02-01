@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileCheck, Settings, User } from "lucide-react";
+import { LayoutDashboard, FileCheck, Settings, User, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -13,6 +13,7 @@ interface MainLayoutProps {
 const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/readiness-report", label: "Readiness Report", icon: FileCheck },
+    { href: "/reports", label: "Reports", icon: ClipboardList },
 ];
 
 export function MainLayout({ children }: MainLayoutProps) {
