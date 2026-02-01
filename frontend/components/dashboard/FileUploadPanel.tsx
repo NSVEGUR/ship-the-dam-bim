@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Upload, ChevronDown, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,19 +10,51 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { createClient } from "@supabase/supabase-js";
 
-const profiles = [
-    { id: "ifc-basic", name: "IFC Basic" },
-    { id: "ifc-advanced", name: "IFC Advanced" },
-    { id: "custom", name: "Custom Profile" },
-];
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+import { cn } from "@/lib/utils";
+import { useProject } from "@/components/ProjectContext";
+
 
 export function FileUploadPanel() {
     const [isDragging, setIsDragging] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-    const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const [isScanning, setIsScanning] = useState(false);
+    const [profiles, setProfiles] = useState<{ id: string; name: string }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { currentProject, updateProjectStats } = useProject();
+
+    useEffect(() => {
+        const fetchProfiles = async () => {
+            console.log("Fetching profiles from Supabase...");
+            console.log("Supabase URL:", supabaseUrl);
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*');
+
+            console.log("Supabase response:", { data, error });
+
+            if (data) {
+                const mappedProfiles = data.map((p: any) => ({
+                    id: p.profile_id || p.id,
+                    name: p.profile_id || p.name || "Unknown Profile"
+                }));
+                console.log("Mapped profiles:", mappedProfiles);
+                setProfiles(mappedProfiles);
+            }
+            if (error) {
+                console.error("Error fetching profiles:", error);
+            }
+        };
+
+        fetchProfiles();
+    }, []);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -42,7 +74,7 @@ export function FileUploadPanel() {
             const file = files[0];
             const ext = file.name.split('.').pop()?.toLowerCase();
             if (ext === 'ifc' || ext === 'csv') {
-                setUploadedFile(file.name);
+                setUploadedFile(file);
                 console.log("Dropped file:", file.name);
             } else {
                 alert("Please upload only .ifc or .csv files");
@@ -57,15 +89,62 @@ export function FileUploadPanel() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            setUploadedFile(files[0].name);
+            setUploadedFile(files[0]);
             console.log("Selected file:", files[0].name);
         }
     };
 
+    const handleScan = async () => {
+        if (!uploadedFile) {
+            alert("No file selected");
+            return;
+        }
+
+        setIsScanning(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", uploadedFile);
+            formData.append("project_id", currentProject.id);
+            formData.append("profile_id", selectedProfile || "default_safety");
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const response = await fetch(`${apiUrl}/scan`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Scan failed: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log("Scan Result:", result);
+
+            if (result.scores) {
+                updateProjectStats(
+                    currentProject.id,
+                    result.scores,
+                    result.issue_summaries || [],
+                    result.missing_properties || [],
+                    result.terminology_mappings || []
+                );
+                alert("Scan completed! Dashboard updated with new scores and detailed issues.");
+            } else {
+                alert("Scan completed! Check console for result.");
+            }
+        } catch (error) {
+            console.error("Scan Error:", error);
+            alert("Scan error occurred. Check console for details.");
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
     return (
-        <Card className="bg-white border border-gray-200">
+        <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-0 pt-3 px-4">
-                <CardTitle className="text-sm font-medium text-gray-900">Quick Action</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Quick Action</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-1">
                 <div className="flex gap-3">
@@ -83,34 +162,33 @@ export function FileUploadPanel() {
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`
-              w-32 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer
-              transition-colors flex flex-col items-center justify-center min-h-[120px]
-              ${uploadedFile
-                                ? "border-emerald-400 bg-emerald-50"
+                        className={cn(
+                            "w-32 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer",
+                            "transition-colors flex flex-col items-center justify-center min-h-[120px]",
+                            uploadedFile
+                                ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30"
                                 : isDragging
-                                    ? "border-emerald-400 bg-emerald-50"
-                                    : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
-                            }
-            `}
+                                    ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30"
+                                    : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        )}
                     >
                         {uploadedFile ? (
                             <>
-                                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center mb-1.5">
-                                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-1.5">
+                                    <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                 </div>
-                                <span className="text-xs font-medium text-emerald-700 truncate max-w-full px-1">
-                                    {uploadedFile}
+                                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 truncate max-w-full px-1">
+                                    {uploadedFile.name}
                                 </span>
-                                <span className="text-[10px] text-emerald-600">Uploaded</span>
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-500">Uploaded</span>
                             </>
                         ) : (
                             <>
-                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mb-1.5">
-                                    <Upload className="h-4 w-4 text-gray-500" />
+                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mb-1.5">
+                                    <Upload className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                                 </div>
-                                <span className="text-xs font-medium text-gray-700">Drop file here</span>
-                                <span className="text-[10px] text-gray-500">or click to browse</span>
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Drop file here</span>
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400">or click to browse</span>
                             </>
                         )}
                     </div>
@@ -123,12 +201,12 @@ export function FileUploadPanel() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="justify-between gap-2 h-9 border-gray-200"
+                                    className="justify-between gap-2 h-9 border-gray-200 dark:border-gray-600"
                                 >
                                     {selectedProfile
                                         ? profiles.find(p => p.id === selectedProfile)?.name
                                         : "Choose Profile"}
-                                    <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                                    <ChevronDown className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-48">
@@ -137,7 +215,7 @@ export function FileUploadPanel() {
                                         key={profile.id}
                                         onClick={() => setSelectedProfile(profile.id)}
                                         className={cn(
-                                            selectedProfile === profile.id && "bg-emerald-50 text-emerald-700"
+                                            selectedProfile === profile.id && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
                                         )}
                                     >
                                         {profile.name}
@@ -148,15 +226,17 @@ export function FileUploadPanel() {
                         {/* Scan button - primary */}
                         <Button
                             size="sm"
-                            className="h-9 bg-gray-900 hover:bg-gray-800 text-white"
+                            className="h-9 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900"
+                            onClick={handleScan}
+                            disabled={isScanning || !uploadedFile}
                         >
-                            Scan
+                            {isScanning ? "Scanning..." : "Scan"}
                         </Button>
                         {/* Download button - secondary */}
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 border-gray-200"
+                            className="h-9 border-gray-200 dark:border-gray-600"
                         >
                             Download
                         </Button>

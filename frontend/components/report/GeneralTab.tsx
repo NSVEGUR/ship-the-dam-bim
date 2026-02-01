@@ -19,7 +19,7 @@ import { StyledTableContainer } from "./StyledTableContainer";
 function SeverityBadge({ severity }: { severity: ValidationRule["severity"] }) {
     if (severity === "CRITICAL") {
         return (
-            <Badge variant="secondary" className="gap-1.5 bg-red-50 text-red-700 hover:bg-red-50 border border-red-200">
+            <Badge variant="secondary" className="gap-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800">
                 <XCircle className="h-3 w-3" />
                 Critical
             </Badge>
@@ -27,14 +27,14 @@ function SeverityBadge({ severity }: { severity: ValidationRule["severity"] }) {
     }
     if (severity === "WARNING") {
         return (
-            <Badge variant="secondary" className="gap-1.5 bg-amber-50 text-amber-700 hover:bg-amber-50 border border-amber-200">
+            <Badge variant="secondary" className="gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
                 <AlertTriangle className="h-3 w-3" />
                 Warning
             </Badge>
         );
     }
     return (
-        <Badge variant="secondary" className="gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border border-emerald-200">
+        <Badge variant="secondary" className="gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
             <CheckCircle2 className="h-3 w-3" />
             OK
         </Badge>
@@ -44,10 +44,10 @@ function SeverityBadge({ severity }: { severity: ValidationRule["severity"] }) {
 // Pass rate with color coding
 function PassRateBadge({ value }: { value: number }) {
     const getColor = () => {
-        if (value >= 95) return "text-emerald-600";
-        if (value >= 80) return "text-emerald-500";
-        if (value >= 60) return "text-amber-600";
-        return "text-red-500";
+        if (value >= 95) return "text-emerald-600 dark:text-emerald-400";
+        if (value >= 80) return "text-emerald-500 dark:text-emerald-400";
+        if (value >= 60) return "text-amber-600 dark:text-amber-400";
+        return "text-red-500 dark:text-red-400";
     };
     return (
         <span className={cn("text-sm font-semibold", getColor())}>{value}%</span>
@@ -73,14 +73,13 @@ export function GeneralTab() {
             <StyledTableContainer className="flex-1 overflow-auto">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                            <TableHead className="w-24 text-gray-600 font-medium">Rule ID</TableHead>
-                            <TableHead className="text-gray-600 font-medium">Rule Name</TableHead>
-                            <TableHead className="w-28 text-gray-600 font-medium">Severity</TableHead>
-                            <TableHead className="text-right w-20 text-gray-600 font-medium">Checked</TableHead>
-                            <TableHead className="text-right w-20 text-gray-600 font-medium">Failed</TableHead>
-                            <TableHead className="text-right w-24 text-gray-600 font-medium">Pass Rate</TableHead>
-                            <TableHead className="text-gray-600 font-medium">Notes</TableHead>
+                        <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                            <TableHead className="w-24 text-gray-600 dark:text-gray-400 font-medium">Rule ID</TableHead>
+                            <TableHead className="text-gray-600 dark:text-gray-400 font-medium">Rule Name</TableHead>
+                            <TableHead className="w-28 text-gray-600 dark:text-gray-400 font-medium">Severity</TableHead>
+                            <TableHead className="text-right w-20 text-gray-600 dark:text-gray-400 font-medium">Checked</TableHead>
+                            <TableHead className="text-right w-20 text-gray-600 dark:text-gray-400 font-medium">Failed</TableHead>
+                            <TableHead className="text-right w-24 text-gray-600 dark:text-gray-400 font-medium">Pass Rate</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -89,22 +88,21 @@ export function GeneralTab() {
                                 key={rule.ruleId}
                                 className={cn(
                                     "cursor-pointer transition-colors",
-                                    selectedRule?.ruleId === rule.ruleId && "bg-blue-50/50",
-                                    "hover:bg-gray-50"
+                                    selectedRule?.ruleId === rule.ruleId && "bg-blue-50/50 dark:bg-blue-900/20",
+                                    "hover:bg-gray-50 dark:hover:bg-gray-700"
                                 )}
                                 onClick={() => setSelectedRule(rule)}
                             >
-                                <TableCell className="font-mono text-sm text-gray-600">{rule.ruleId}</TableCell>
-                                <TableCell className="font-medium text-gray-900">{rule.ruleName}</TableCell>
+                                <TableCell className="font-mono text-sm text-gray-600 dark:text-gray-400">{rule.ruleId}</TableCell>
+                                <TableCell className="font-medium text-gray-900 dark:text-gray-100">{rule.ruleName}</TableCell>
                                 <TableCell>
                                     <SeverityBadge severity={rule.severity} />
                                 </TableCell>
-                                <TableCell className="text-right text-gray-700">{rule.checked}</TableCell>
-                                <TableCell className="text-right text-gray-700">{rule.failed}</TableCell>
+                                <TableCell className="text-right text-gray-700 dark:text-gray-300">{rule.checked}</TableCell>
+                                <TableCell className="text-right text-gray-700 dark:text-gray-300">{rule.failed}</TableCell>
                                 <TableCell className="text-right">
                                     <PassRateBadge value={rule.passRate} />
                                 </TableCell>
-                                <TableCell className="text-gray-500 text-sm">{rule.notes}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

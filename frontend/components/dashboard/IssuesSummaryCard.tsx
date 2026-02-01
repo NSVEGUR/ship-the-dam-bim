@@ -18,44 +18,44 @@ export function IssuesSummaryCard() {
     const infoPercent = total > 0 ? (info / total) * 100 : 0;
 
     return (
-        <Card className="bg-white border border-gray-200 h-full">
+        <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-full">
             <CardHeader className="pb-0 pt-3 px-4">
-                <CardTitle className="text-sm font-medium text-gray-900">Issues Summary</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Issues Summary</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-1 space-y-3">
                 {/* Total issues */}
                 <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-gray-900">{total}</span>
-                    <span className="text-xs text-gray-500">total issues</span>
+                    <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{total}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">total issues</span>
                 </div>
 
                 {/* Issue breakdown */}
                 <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-red-50 flex items-center justify-center">
-                            <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+                        <div className="w-6 h-6 rounded bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+                            <AlertCircle className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
                         </div>
-                        <span className="text-xs text-gray-700">Critical</span>
-                        <span className="text-xs font-semibold text-gray-900 ml-auto">{critical}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Critical</span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 ml-auto">{critical}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-amber-50 flex items-center justify-center">
-                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                        <div className="w-6 h-6 rounded bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
                         </div>
-                        <span className="text-xs text-gray-700">Warning</span>
-                        <span className="text-xs font-semibold text-gray-900 ml-auto">{warning}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Warning</span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 ml-auto">{warning}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-blue-50 flex items-center justify-center">
-                            <Info className="h-3.5 w-3.5 text-blue-500" />
+                        <div className="w-6 h-6 rounded bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                            <Info className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                         </div>
-                        <span className="text-xs text-gray-700">Info</span>
-                        <span className="text-xs font-semibold text-gray-900 ml-auto">{info}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Info</span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 ml-auto">{info}</span>
                     </div>
                 </div>
 
                 {/* Stacked bar */}
-                <div className="h-1.5 w-full rounded-full overflow-hidden flex bg-gray-100">
+                <div className="h-1.5 w-full rounded-full overflow-hidden flex bg-gray-100 dark:bg-gray-700">
                     {criticalPercent > 0 && (
                         <div className="h-full bg-red-500" style={{ width: `${criticalPercent}%` }} />
                     )}

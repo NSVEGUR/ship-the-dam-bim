@@ -19,12 +19,12 @@ export function MainLayout({ children }: MainLayoutProps) {
     const pathname = usePathname();
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
             {/* Sidebar */}
-            <aside className="w-56 bg-white border-r border-gray-200 flex flex-col">
+            <aside className="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
                 {/* Logo */}
-                <div className="p-3 border-b border-gray-200">
-                    <Link href="/" className="flex items-center gap-2 font-semibold text-gray-900">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                    <Link href="/" className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white">
                             <Ship className="h-4 w-4" />
                         </div>
@@ -44,8 +44,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 className={cn(
                                     "flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded-lg transition-colors",
                                     isActive
-                                        ? "bg-emerald-50 text-emerald-700"
-                                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                        ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                        : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 )}
                             >
                                 <Icon className="h-4 w-4" />
@@ -56,7 +56,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </nav>
 
                 {/* Bottom section: Settings + User */}
-                <div className="border-t border-gray-200">
+                <div className="border-t border-gray-200 dark:border-gray-700">
                     {/* Settings */}
                     <div className="p-3 pb-0">
                         <Link
@@ -64,8 +64,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                             className={cn(
                                 "flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded-lg transition-colors",
                                 pathname === "/settings"
-                                    ? "bg-emerald-50 text-emerald-700"
-                                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                             )}
                         >
                             <Settings className="h-4 w-4" />
@@ -74,16 +74,24 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </div>
                     {/* User */}
                     <div className="p-3">
-                        <div className="flex items-center gap-2 px-2 py-1.5">
+                        <Link
+                            href="/user"
+                            className={cn(
+                                "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors",
+                                pathname === "/user"
+                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            )}
+                        >
                             <Avatar className="h-7 w-7">
-                                <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                                <AvatarFallback className="bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs">
                                     <User className="h-3.5 w-3.5" />
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">User</p>
+                                <p className="text-sm font-medium truncate">User</p>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 </div>
             </aside>

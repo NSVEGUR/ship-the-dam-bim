@@ -20,14 +20,14 @@ import { StyledTableContainer } from "./StyledTableContainer";
 function SeverityBadge({ severity }: { severity: string }) {
     if (severity === "CRITICAL") {
         return (
-            <Badge variant="secondary" className="gap-1.5 bg-red-50 text-red-700 hover:bg-red-50 border border-red-200">
+            <Badge variant="secondary" className="gap-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800">
                 <XCircle className="h-3 w-3" />
                 Critical
             </Badge>
         );
     }
     return (
-        <Badge variant="secondary" className="gap-1.5 bg-amber-50 text-amber-700 hover:bg-amber-50 border border-amber-200">
+        <Badge variant="secondary" className="gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
             <AlertTriangle className="h-3 w-3" />
             Warning
         </Badge>
@@ -37,14 +37,14 @@ function SeverityBadge({ severity }: { severity: string }) {
 // Element type badge
 function ElementTypeBadge({ type }: { type: string }) {
     const colors: Record<string, string> = {
-        IfcWall: "bg-blue-50 text-blue-700 border-blue-200",
-        IfcDoor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        IfcWindow: "bg-violet-50 text-violet-700 border-violet-200",
-        IfcSlab: "bg-amber-50 text-amber-700 border-amber-200",
-        IfcSpace: "bg-pink-50 text-pink-700 border-pink-200",
+        IfcWall: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+        IfcDoor: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+        IfcWindow: "bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800",
+        IfcSlab: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+        IfcSpace: "bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400 border-pink-200 dark:border-pink-800",
     };
     return (
-        <Badge variant="outline" className={cn("text-xs font-medium border", colors[type] || "bg-gray-50 text-gray-700 border-gray-200")}>
+        <Badge variant="outline" className={cn("text-xs font-medium border", colors[type] || "bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600")}>
             {type}
         </Badge>
     );
@@ -68,16 +68,16 @@ export function MissingPropertyTab() {
             <StyledTableContainer className="flex-1 overflow-auto">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                            <TableHead className="w-24 text-gray-600 font-medium">Severity</TableHead>
-                            <TableHead className="w-28 text-gray-600 font-medium">Issue Type</TableHead>
-                            <TableHead className="w-24 text-gray-600 font-medium">Rule ID</TableHead>
-                            <TableHead className="text-gray-600 font-medium">Rule Name</TableHead>
-                            <TableHead className="w-28 text-gray-600 font-medium">Element Type</TableHead>
-                            <TableHead className="text-gray-600 font-medium">Element Name</TableHead>
-                            <TableHead className="w-16 text-gray-600 font-medium">Level</TableHead>
-                            <TableHead className="text-gray-600 font-medium">Property Set</TableHead>
-                            <TableHead className="text-gray-600 font-medium">Property Key</TableHead>
+                        <TableRow className="bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                            <TableHead className="w-24 text-gray-600 dark:text-gray-400 font-medium">Severity</TableHead>
+                            <TableHead className="w-28 text-gray-600 dark:text-gray-400 font-medium">Issue Type</TableHead>
+                            <TableHead className="w-24 text-gray-600 dark:text-gray-400 font-medium">Rule ID</TableHead>
+                            <TableHead className="text-gray-600 dark:text-gray-400 font-medium">Rule Name</TableHead>
+                            <TableHead className="w-28 text-gray-600 dark:text-gray-400 font-medium">Element Type</TableHead>
+                            <TableHead className="text-gray-600 dark:text-gray-400 font-medium">Element Name</TableHead>
+                            <TableHead className="w-16 text-gray-600 dark:text-gray-400 font-medium">Level</TableHead>
+                            <TableHead className="text-gray-600 dark:text-gray-400 font-medium">Property Set</TableHead>
+                            <TableHead className="text-gray-600 dark:text-gray-400 font-medium">Property Key</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -86,29 +86,29 @@ export function MissingPropertyTab() {
                                 key={idx}
                                 className={cn(
                                     "cursor-pointer transition-colors",
-                                    selectedProperty === prop && "bg-blue-50/50",
-                                    "hover:bg-gray-50"
+                                    selectedProperty === prop && "bg-blue-50/50 dark:bg-blue-900/20",
+                                    "hover:bg-gray-50 dark:hover:bg-gray-700"
                                 )}
                                 onClick={() => setSelectedProperty(prop)}
                             >
                                 <TableCell>
                                     <SeverityBadge severity={prop.severity} />
                                 </TableCell>
-                                <TableCell className="text-sm text-gray-700">{prop.issueType}</TableCell>
-                                <TableCell className="font-mono text-sm text-gray-600">{prop.ruleId}</TableCell>
-                                <TableCell className="font-medium text-gray-900">{prop.ruleName}</TableCell>
+                                <TableCell className="text-sm text-gray-700 dark:text-gray-300">{prop.issueType}</TableCell>
+                                <TableCell className="font-mono text-sm text-gray-600 dark:text-gray-400">{prop.ruleId}</TableCell>
+                                <TableCell className="font-medium text-gray-900 dark:text-gray-100">{prop.ruleName}</TableCell>
                                 <TableCell>
                                     <ElementTypeBadge type={prop.elementType} />
                                 </TableCell>
-                                <TableCell className="text-sm text-gray-900 max-w-40 truncate" title={prop.elementName}>
+                                <TableCell className="text-sm text-gray-900 dark:text-gray-100 max-w-40 truncate" title={prop.elementName}>
                                     {prop.elementName}
                                 </TableCell>
-                                <TableCell className="text-sm text-gray-600">{prop.level}</TableCell>
+                                <TableCell className="text-sm text-gray-600 dark:text-gray-400">{prop.level}</TableCell>
                                 <TableCell>
-                                    <span className="text-sm px-2 py-1 bg-gray-100 rounded text-gray-700">{prop.propertySet}</span>
+                                    <span className="text-sm px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300">{prop.propertySet}</span>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="text-sm font-mono text-gray-600">{prop.propertyKey}</span>
+                                    <span className="text-sm font-mono text-gray-600 dark:text-gray-400">{prop.propertyKey}</span>
                                 </TableCell>
                             </TableRow>
                         ))}

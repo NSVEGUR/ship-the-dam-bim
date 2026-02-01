@@ -33,16 +33,16 @@ export default function DashboardPage() {
         {/* Header with Project selector and Ready to Ship badge */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-            <p className="text-xs text-gray-500">Overview of BIM Readiness Status</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Overview of BIM Readiness Status</p>
           </div>
           <div className="flex items-center gap-2">
             {/* Project Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 border-gray-200 h-8">
+                <Button variant="outline" size="sm" className="gap-2 border-gray-200 dark:border-gray-700 h-8">
                   {currentProject.name}
-                  <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                  <ChevronDown className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -51,7 +51,7 @@ export default function DashboardPage() {
                     key={project.id}
                     onClick={() => setCurrentProject(project.id)}
                     className={cn(
-                      currentProject.id === project.id && "bg-emerald-50 text-emerald-700"
+                      currentProject.id === project.id && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
                     )}
                   >
                     {project.name}
@@ -63,7 +63,7 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               size="icon"
-              className="border-gray-200 h-8 w-8"
+              className="border-gray-200 dark:border-gray-700 h-8 w-8"
               onClick={() => setNewProjectOpen(true)}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -74,8 +74,8 @@ export default function DashboardPage() {
               className={cn(
                 "gap-1 px-2 py-1 text-xs",
                 isReadyToShip
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-amber-100 text-amber-700"
+                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                  : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
               )}
             >
               <div className={cn(
