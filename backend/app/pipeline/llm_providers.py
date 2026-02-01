@@ -12,6 +12,11 @@ from typing import List, Dict, Any, Optional, Literal
 
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
+GEMINI_MODEL = "gemini-3-pro"
+OPEN_AI_MODEL = "gpt-5.2"
+MINI_MAX_MODEL = "MiniMax-M2.1-Pro"
+MINI_MAX_API_URL = "https://api.minimax.chat/v1"
+
 
 class LLMProvider(ABC):
     """Abstract base class for LLM providers."""
@@ -37,7 +42,7 @@ class GeminiProvider(LLMProvider):
         self._available = bool(api_key)
         if self._available:
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-pro-latest",
+                model=GEMINI_MODEL,
                 temperature=0,
                 google_api_key=api_key,
             )
@@ -60,12 +65,12 @@ class MiniMaxProvider(LLMProvider):
     
     Requires:
     - MINIMAX_API_KEY
-    - MINIMAX_BASE_URL (default: https://api.minimax.chat/v1)
+    - MINIMAX_BASE_URL
     """
     
     def __init__(self):
         self.api_key = os.getenv("MINIMAX_API_KEY")
-        self.base_url = os.getenv("MINIMAX_BASE_URL", "https://api.minimax.chat/v1")
+        self.base_url = MINI_MAX_API_URL
         self._available = bool(self.api_key)
     
     async def ainvoke(self, messages: List[BaseMessage]) -> str:
@@ -86,7 +91,7 @@ class MiniMaxProvider(LLMProvider):
         
         # MiniMax uses Anthropic-compatible API
         payload = {
-            "model": "MiniMax-M2.1",
+            "model": MINI_MAX_MODEL,
             "max_tokens": 4096,
             "messages": formatted_messages,
         }
@@ -127,8 +132,8 @@ class OpenAIProvider(LLMProvider):
     
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o")
-        self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        self.model = "gpt-4.1"
+        self.base_url = "https://api.openai.com/v1"
         self._available = bool(self.api_key)
     
     async def ainvoke(self, messages: List[BaseMessage]) -> str:

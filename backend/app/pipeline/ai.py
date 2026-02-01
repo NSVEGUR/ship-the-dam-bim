@@ -15,7 +15,7 @@ from langgraph.prebuilt import create_react_agent
 from app.pipeline.models import MissingProperty, Profile
 
 # MCP base URL - API and MCP run in same process, so default localhost
-MCP_BASE_URL = os.getenv("MCP_BASE_URL", "http://127.0.0.1:8000")
+MCP_BASE_URL = "http://127.0.0.1:8000"
 
 
 class AIAgent:

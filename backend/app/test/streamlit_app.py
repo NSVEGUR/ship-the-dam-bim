@@ -14,7 +14,7 @@ st.set_page_config(page_title="Ship the BIM", layout="wide")
 
 st.title("Ship the BIM - Release Gate")
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = "http://localhost:8000"
 
 st.sidebar.header("Configuration")
 api_status = "Checking..."

@@ -29,7 +29,7 @@ class ManusSynthesis:
     
     def __init__(self):
         self.api_key = os.getenv("MANUS_API_KEY")
-        self.base_url = os.getenv("MANUS_BASE_URL", "https://api.manus.im/v1")
+        self.base_url = "https://api.manus.im/v1"
         self._available = bool(self.api_key)
     
     def is_available(self) -> bool:
