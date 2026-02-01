@@ -108,24 +108,35 @@ async def run_scan(
 @router.post("/fix")
 async def fix_ifc(
     file: UploadFile = File(...),
-    fix_data: str = Form(...),
+    project_id: int = Form(...),
+    report_id: Optional[int] = Form(None),
     language: str = Form("en"),
 ):
     """
-    Apply suggested fixes to an IFC file and return the corrected file.
+    Apply suggested fixes to an IFC file using data from database.
     
     - file: Original IFC file
-    - fix_data: JSON string containing {"missing_properties": [...], "terminology": [...]}
+    - project_id: Project ID to fetch latest report
+    - report_id: Optional specific report ID (if not provided, uses latest)
     - language: "en" for English suggestions, "de" for German
     
     Returns: Downloadable IFC file with fixes applied
     """
     try:
-        # Parse fix data
-        try:
-            data = json.loads(fix_data)
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid fix_data JSON: {str(e)}")
+        store = SupabaseStorage()
+        
+        # Get report_id (use provided or fetch latest)
+        if not report_id:
+            report_id = store.get_latest_report_id(project_id)
+            if not report_id:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No reports found for project_id: {project_id}. Run a scan first."
+                )
+        
+        # Fetch data from database
+        missing_props = store.get_missing_properties_by_report(report_id)
+        terminology = store.get_terminology_by_report(report_id)
         
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as tmp:
@@ -133,22 +144,6 @@ async def fix_ifc(
             tmp_path = tmp.name
         
         try:
-            # Parse missing_properties
-            missing_props = []
-            for mp in data.get("missing_properties", []):
-                try:
-                    missing_props.append(MissingProperty(**mp))
-                except Exception:
-                    pass  # Skip invalid entries
-            
-            # Parse terminology
-            terminology = []
-            for t in data.get("terminology", []):
-                try:
-                    terminology.append(TerminologyMapping(**t))
-                except Exception:
-                    pass  # Skip invalid entries
-            
             # Apply fixes
             fixed_content = apply_fixes(
                 ifc_path=tmp_path,
