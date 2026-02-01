@@ -2,7 +2,6 @@
 LLM Provider abstraction layer.
 
 Supports Gemini (default), MiniMax M2.1, and OpenAI.
-Manus is handled separately in manus_synthesis.py for holistic analysis.
 """
 
 import os
@@ -12,7 +11,7 @@ from typing import List, Dict, Any, Optional, Literal
 
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
-GEMINI_MODEL = "gemini-3-pro"
+GEMINI_MODEL = "gemini-3-flash-preview"
 OPEN_AI_MODEL = "gpt-5.2"
 MINI_MAX_MODEL = "MiniMax-M2.1-Pro"
 MINI_MAX_API_URL = "https://api.minimax.chat/v1"

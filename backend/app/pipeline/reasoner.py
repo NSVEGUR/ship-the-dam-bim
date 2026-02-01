@@ -115,13 +115,13 @@ class ContextReasoner:
             prompt_items.append(f"- Rule: {s.rule_name} (ID: {s.rule_id})")
 
         sys = (
-            "You are a BIM Manager. For each failed rule, provide 3 short distinct strings:\n"
-            "1. 'what_is_wrong': The error description.\n"
-            "2. 'why_it_matters': The impact.\n"
-            "3. 'where_to_fix_it': General location/method to fix.\n"
-            "Format: RuleID | what_is_wrong | why_it_matters | where_to_fix_it"
+            "You are an Elite BIM QA Manager & Strategist. For each failed rule, provide 3 distinct strings providing deep technical guidance:\n"
+            "1. 'what_is_wrong': A technical description of the failure pattern.\n"
+            "2. 'why_it_matters': The downstream impact (Cost, Schedule, FM, COBie, 4D/5D).\n"
+            "3. 'where_to_fix_it': Specific modeling action (e.g. 'Revit Family Editor', 'Export Mappings').\n"
+            "Format exactly as: RuleID | what_is_wrong | why_it_matters | where_to_fix_it"
         )
-        user = "Rules:\n" + "\n".join(prompt_items)
+        user = "Analyze these failed rules:\n" + "\n".join(prompt_items)
 
         try:
             text = await self.llm_provider.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
@@ -132,6 +132,9 @@ class ContextReasoner:
                 parts = [p.strip() for p in line.split("|")]
                 if len(parts) >= 4:
                     rid = parts[0]
+                    # Clean up if ID has prefix
+                    if ":" in rid: rid = rid.split(":")[-1].strip()
+                    
                     guidance_map[rid] = {
                         "what_is_wrong": parts[1],
                         "why_it_matters": parts[2],
@@ -176,9 +179,9 @@ class ContextReasoner:
 
         # Batch: ask LLM to provide concise why_it_matters for each
         sys = (
-            "You are a BIM QA expert. For each issue, provide a 1–2 sentence "
-            "'why_it_matters' explaining the impact in submission/QA context. "
-            "Be concise and practical."
+            "You are a Senior BIM Coordinator. For each issue, provide a 1–2 sentence "
+            "'why_it_matters' explanation focusing on data interoperability, quantity takeoff, and facility management impact. "
+            "Be professional and precise."
         )
         items = []
         for i in to_enrich[:20]:  # Limit to avoid token overflow
