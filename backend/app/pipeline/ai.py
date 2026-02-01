@@ -60,17 +60,30 @@ class AIAgent:
         graph = create_react_agent(self.llm, tools)
 
         system_prompt = (
-            f"You are an expert BIM Manager validating IFC file at:\n{self.file_path}\n\n"
-            "Use the available MCP tools to inspect the IFC model. When calling tools, "
-            f"always pass file_path=\"{self.file_path}\" (the path above).\n\n"
-            "For each violation found, provide: ifc_guid (GlobalId), element_type, "
-            "rule_id, severity, and a brief reason. Be specific and cite GlobalIds."
+            f"You are an Elite BIM QA Manager validating the IFC file at:\n{self.file_path}\n\n"
+            "SYSTEM GOAL: Identify rule violations within the IFC model using provided MCP tools.\n\n"
+            "OPERATIONAL RULES:\n"
+            f"1. Always pass file_path=\"{self.file_path}\" to all tool calls.\n"
+            "2. For every violation, you MUST provide: rule_id, ifc_guid, element_type, severity, and why_it_matters.\n"
+            "3. Cite exact GlobalIds (ifc_guid) found in the model.\n"
+            "4. RESPONSE FORMAT: You MUST return your final findings as a JSON list of objects.\n\n"
+            "JSON STRUCTURE:\n"
+            "[\n"
+            "  {\n"
+            "    \"rule_id\": \"RULE_001\",\n"
+            "    \"ifc_guid\": \"GlobalId_String\",\n"
+            "    \"element_type\": \"IfcWall\",\n"
+            "    \"severity\": \"MAJOR\",\n"
+            "    \"why_it_matters\": \"Explanation of impact...\"\n"
+            "  }\n"
+            "]"
         )
         user_prompt = (
+            "INSPECTION REQUIREMENTS:\n"
             f"{requirements_text}\n\n"
-            "Inspect the IFC file using the tools and list any violations. "
-            "For each issue, include: rule_id, ifc_guid, element_type, severity, "
-            "and why_it_matters (brief explanation)."
+            "Step 1: Use tools to inspect the model for these specific requirements.\n"
+            "Step 2: Consolidate all findings.\n"
+            "Step 3: Return the JSON list of violations. If no violations are found, return an empty list []."
         )
 
         messages = [
@@ -81,7 +94,8 @@ class AIAgent:
         try:
             state = await graph.ainvoke({"messages": messages})
             return self._parse_issues_from_response(state, custom_rules)
-        except Exception:
+        except Exception as e:
+            print(f"AI Agent Scan Error: {e}")
             return []
 
     def _parse_issues_from_response(
@@ -89,8 +103,10 @@ class AIAgent:
         state: dict,
         rules: List,
     ) -> List[MissingProperty]:
-        """Extract MissingProperty objects from agent response. Best-effort parsing."""
-        from app.pipeline.models import IssueType, Severity
+        """Extract MissingProperty objects from agent response using JSON parsing with fuzzy fallback."""
+        import json
+        import re
+        from app.pipeline.models import IssueType
 
         issues: List[MissingProperty] = []
         rule_map = {r.id: r for r in rules}
@@ -106,33 +122,75 @@ class AIAgent:
         if not content:
             return issues
 
-        # Simple heuristic: look for patterns like "GlobalId: xxx" or "ifc_guid: xxx"
-        # and "rule_id: xxx", "severity: xxx". Full parsing would need structured output.
-        lines = content.split("\n")
-        current = {}
-        for line in lines:
-            line = line.strip()
-            for prefix in ("GlobalId:", "ifc_guid:", "rule_id:", "severity:", "element_type:", "why_it_matters:"):
-                if line.lower().startswith(prefix.lower()):
-                    key = prefix.rstrip(":").lower().replace(" ", "_")
-                    val = line[len(prefix):].strip().strip("'\"")
-                    current[key] = val
-                    break
-            if current.get("rule_id") and current.get("ifc_guid") and current.get("rule_id") in rule_map:
-                rule = rule_map[current["rule_id"]]
-                issues.append(
-                    MissingProperty(
-                        rule_id=rule.id,
-                        rule_name=rule.name,
-                        ifc_guid=current.get("ifc_guid", "N/A"),
-                        element_type=current.get("element_type", "Unknown"),
-                        severity=self._parse_severity(current.get("severity", "MAJOR")),
-                        issue_type=IssueType.UNKNOWN,
-                        why_it_matters=current.get("why_it_matters") or rule.description,
-                        confidence=0.8,
+        # Phase 1: Try strict JSON extraction from potential code blocks
+        json_data = []
+        try:
+            # Look for JSON in code blocks first
+            json_match = re.search(r"```json\s*(.*?)\s*```", content, re.DOTALL)
+            if not json_match:
+                # Fallback to look for [ ... ] pattern
+                json_match = re.search(r"(\[.*\])", content, re.DOTALL)
+            
+            if json_match:
+                json_str = json_match.group(1).strip()
+                json_data = json.loads(json_str)
+            else:
+                # Last resort: try to parse the whole content as JSON
+                json_data = json.loads(content)
+        except (json.JSONDecodeError, ValueError):
+            # Phase 2: Fuzzy fallback to line-based parsing if JSON fails
+            print("Fuzzy parsing AI response (JSON failed)")
+            lines = content.split("\n")
+            current = {}
+            for line in lines:
+                line = line.strip()
+                for prefix in ("GlobalId:", "ifc_guid:", "rule_id:", "severity:", "element_type:", "why_it_matters:"):
+                    if line.lower().startswith(prefix.lower()):
+                        key = prefix.rstrip(":").lower().replace(" ", "_")
+                        val = line[len(prefix):].strip().strip("'\"")
+                        current[key] = val
+                        break
+                
+                guid = current.get("ifc_guid") or current.get("globalid")
+                if current.get("rule_id") and guid and current.get("rule_id") in rule_map:
+                    rule = rule_map[current["rule_id"]]
+                    issues.append(
+                        MissingProperty(
+                            rule_id=rule.id,
+                            rule_name=rule.name,
+                            ifc_guid=guid,
+                            element_type=current.get("element_type", "Unknown"),
+                            severity=self._parse_severity(current.get("severity", "MAJOR")),
+                            issue_type=IssueType.UNKNOWN,
+                            why_it_matters=current.get("why_it_matters") or rule.description,
+                            confidence=0.7,
+                        )
                     )
-                )
-                current = {}
+                    current = {}
+            return issues
+
+        # Convert JSON objects to MissingProperty
+        if isinstance(json_data, list):
+            for item in json_data:
+                if not isinstance(item, dict): continue
+                
+                rid = item.get("rule_id")
+                guid = item.get("ifc_guid")
+                
+                if rid and guid and rid in rule_map:
+                    rule = rule_map[rid]
+                    issues.append(
+                        MissingProperty(
+                            rule_id=rule.id,
+                            rule_name=rule.name,
+                            ifc_guid=guid,
+                            element_type=item.get("element_type", "Unknown"),
+                            severity=self._parse_severity(item.get("severity", "MAJOR")),
+                            issue_type=IssueType.UNKNOWN,
+                            why_it_matters=item.get("why_it_matters") or rule.description,
+                            confidence=0.9,
+                        )
+                    )
 
         return issues
 

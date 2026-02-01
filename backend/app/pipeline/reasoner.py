@@ -119,10 +119,11 @@ class ContextReasoner:
             prompt_items.append(f"- Rule: {s.rule_name} (ID: {s.rule_id})")
 
         sys = (
-            "You are an Elite BIM QA Manager & Strategist. For each failed rule, provide 3 distinct strings providing deep technical guidance:\n"
-            "1. 'what_is_wrong': A technical description of the failure pattern.\n"
-            "2. 'why_it_matters': The downstream impact (Cost, Schedule, FM, COBie, 4D/5D).\n"
-            "3. 'where_to_fix_it': Specific modeling action (e.g. 'Revit Family Editor', 'Export Mappings').\n"
+            "You are an Elite BIM QA Special Advisor. Your objective is to provide deep technical and strategic guidance for failed model checks.\n\n"
+            "For each failed rule, provide 3 distinct strings:\n"
+            "1. 'what_is_wrong': A technical root-cause analysis (e.g., 'Parameter mapping mismatch in IFC export' or 'Family-level data omission').\n"
+            "2. 'why_it_matters': Strategic impact on Project lifecycle (e.g., 'Prevents automated quantity takeoff for 5D cost estimation' or 'Blocks COBie asset data handover').\n"
+            "3. 'where_to_fix_it': Actionable modeling instruction (e.g., 'Update Revit Shared Parameter file', 'Revise IFC Export Mapping Table', or 'Check Family Type properties').\n\n"
             "Format exactly as: RuleID | what_is_wrong | why_it_matters | where_to_fix_it"
         )
         user = "Analyze these failed rules:\n" + "\n".join(prompt_items)
@@ -183,9 +184,12 @@ class ContextReasoner:
 
         # Batch: ask LLM to provide concise why_it_matters for each
         sys = (
-            "You are a Senior BIM Coordinator. For each issue, provide a 1–2 sentence "
-            "'why_it_matters' explanation focusing on data interoperability, quantity takeoff, and facility management impact. "
-            "Be professional and precise."
+            "You are a Senior BIM Coordinator and Data Scientist. For each issue, provide a concise "
+            "'why_it_matters' explanation. Focus on:\n"
+            "- Downstream impact on 4D (Schedule), 5D (Cost), and 6D (Sustainability).\n"
+            "- Interoperability issues (COBie compliance, LOD 400 requirements).\n"
+            "- Facility management and automated code checking impact.\n"
+            "Be professional, precise, and avoid generic statements."
         )
         items = []
         for i in to_enrich[:20]:  # Limit to avoid token overflow
@@ -300,29 +304,29 @@ class ContextReasoner:
             elem_type = t.element_type or "Unknown"
             term_list.append(f"{i}. {original} | {english} | {elem_type}")
 
-        system_prompt = """You are a BIM terminology expert fluent in English and German.
-You MUST follow buildingSMART Data Dictionary (bSDD) naming conventions.
+        system_prompt = """You are a Senior BIM Terminology Expert fluent in English and German.
+You specialize in buildingSMART Data Dictionary (bSDD) and IFC standards.
 
-For each term below, provide the German translation following these rules:
-- Use official bSDD/IFC German terminology when available
-- Use standard German BIM/construction terminology
-- Keep technical terms like "Ifc" prefixes unchanged
-- NEVER leave German empty - always provide your best translation
+Your task is to provide precise German translations for BIM properties and entities.
 
-Output format (EXACTLY 3 columns separated by |):
-Number. Original | English | German
+RULES:
+1. Use official buildingSMART/IFC German terminology (e.g., DIN EN ISO 16739).
+2. For properties, use standard DIN/VDI construction terms.
+3. Keep technical prefixes like "Ifc" unchanged.
+4. Ensure the German term is technically accurate for the given element_type.
+5. NEVER leave the German column empty.
 
+Format: Original | English | German
 Example:
-1. FireRating | Fire Rating | Feuerwiderstandsklasse
-2. IfcWall | Wall | Wand
-3. LoadBearing | Load Bearing | Tragend"""
+FireRating | Fire Rating | Feuerwiderstandsklasse
+IfcWall | Wall | Wand
+LoadBearing | Load Bearing | Tragend"""
 
-        user_prompt = f"""Translate these BIM terms to German (Column 3 MUST NOT be empty):
+        user_prompt = f"""Translate these BIM terms to German (strictly follow bSDD standards):
 
 {chr(10).join(term_list)}
 
-IMPORTANT: Every line MUST have exactly 3 columns: Original | English | German
-The German column is REQUIRED - infer the translation if unsure."""
+IMPORTANT: Provide exactly one line per term with 3 columns separated by |. Do not add any preamble or explanations."""
 
         try:
             response = await self.llm_provider.ainvoke([
