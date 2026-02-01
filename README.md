@@ -320,10 +320,19 @@ This project is licensed under the MIT License.
 
 ## 👥 Team
 
-Built with ❤️ for the AEC industry.
+* **Mia** 🧙‍♀️✨ (Making magic happen)
+* **Irfan** 🚀🔥 (Shipping at lightspeed)
+* **Nagasai** 🧠💡 (The Big Brain)
+* **Lewin** 🥷👾 (The Code Ninja)
+* **Ozan** ☕💻 (Powered by caffeine)
+
+
+## Built with ❤️ for the AEC industry
 
 ---
 
 <p align="center">
   <strong>Ship the BIM</strong> - Because every BIM deserves to be delivered with confidence 🚢
 </p>
+
+
