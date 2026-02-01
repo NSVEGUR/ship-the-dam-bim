@@ -17,6 +17,7 @@ import os
 
 from app.pipeline.models import Profile, ScanResult
 from app.pipeline.orchestrator import PipelineOrchestrator
+from app.pipeline.llm_providers import LLMChoice
 from app.storage.profiles import get_profile, list_profiles
 from app.storage.supabase_store import SupabaseStorage
 
@@ -39,7 +40,8 @@ async def run_scan(
     file: UploadFile = File(...),
     profile_data: Optional[str] = Form(None),
     profile_id: Optional[str] = Form(None),
-    project_id: int = Form(1), # Default to 1 if not provided
+    project_id: int = Form(123),
+    llm_provider: str = Form("gemini"),
 ):
     """
     Run pipeline on uploaded IFC or CSV file.
@@ -48,6 +50,9 @@ async def run_scan(
     - profile_data: JSON string of profile (use if profile_id not set)
     - profile_id: key from stored profiles (use if profile_data not set)
     - project_id: ID of the project in Supabase (must exist)
+    - llm_provider: Base LLM for reasoning - "gemini", "minimax", or "openai"
+    
+    Note: Manus synthesis runs automatically if MANUS_API_KEY is set.
     """
     try:
         # Resolve profile
@@ -81,6 +86,7 @@ async def run_scan(
                 profile=profile,
                 project_id=project_id,
                 user_approved_terminology=prev_terms,
+                llm_provider=llm_provider,  # type: ignore
             )
 
             result = await orchestrator.run_full_scan()

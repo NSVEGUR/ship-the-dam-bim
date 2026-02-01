@@ -7,9 +7,10 @@ enriches why_it_matters with human-readable explanations, suggests values where 
 
 from app.pipeline.models import IssueSummary
 import os
-from typing import List, Dict, Optional, Any, Tuple
+from typing import List, Dict, Optional, Any, Tuple, TYPE_CHECKING
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+if TYPE_CHECKING:
+    from app.pipeline.llm_providers import LLMProvider
 
 from app.pipeline.models import (
     IssueSummary,
@@ -23,17 +24,20 @@ from app.terminology.bsdd_client import get_allowed_values_for_property
 class ContextReasoner:
     """Enrich raw issues with human-readable reasoning and suggested values."""
 
-    def __init__(self):
-        api_key = os.getenv("GOOGLE_API_KEY")
-        self.llm = (
-            ChatGoogleGenerativeAI(
-                model="gemini-1.5-pro-latest",
-                temperature=0,
-                google_api_key=api_key,
-            )
-            if api_key
-            else None
-        )
+    def __init__(self, llm_provider: Optional["LLMProvider"] = None):
+        """
+        Initialize reasoner with optional LLM provider.
+        
+        Args:
+            llm_provider: LLMProvider instance. If None, uses default Gemini.
+        """
+        self.llm_provider = llm_provider
+        
+        # Fallback to Gemini if no provider specified
+        if self.llm_provider is None:
+            from app.pipeline.llm_providers import GeminiProvider
+            provider = GeminiProvider()
+            self.llm_provider = provider if provider.is_available() else None
 
     async def process(
         self,
@@ -57,7 +61,7 @@ class ContextReasoner:
             deduped.append(i)
 
         # 2. Enrich why_it_matters and suggested_value using LLM if available
-        if self.llm:
+        if self.llm_provider:
             try:
                 deduped = await self._enrich_with_llm(deduped, profile)
             except Exception:
@@ -81,7 +85,7 @@ class ContextReasoner:
                             i.suggested_value = vals[0]
 
         # 4. Generate Guidance for Rule Summaries and propagate to issues
-        if self.llm:
+        if self.llm_provider:
             try:
                 summary, deduped = await self._generate_guidance_for_summaries(summary, deduped)
             except Exception:
@@ -120,8 +124,7 @@ class ContextReasoner:
         user = "Rules:\n" + "\n".join(prompt_items)
 
         try:
-            resp = await self.llm.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
-            text = resp.content if hasattr(resp, "content") else str(resp)
+            text = await self.llm_provider.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
             
             # Parse response
             guidance_map = {} # rule_id -> {what, why, where}
@@ -168,7 +171,7 @@ class ContextReasoner:
             i for i in issues
             if not i.why_it_matters or len(str(i.why_it_matters)) < 30
         ]
-        if not to_enrich or not self.llm:
+        if not to_enrich or not self.llm_provider:
             return issues
 
         # Batch: ask LLM to provide concise why_it_matters for each
@@ -189,8 +192,7 @@ class ContextReasoner:
         )
 
         try:
-            resp = await self.llm.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
-            text = resp.content if hasattr(resp, "content") else str(resp)
+            text = await self.llm_provider.ainvoke([SystemMessage(content=sys), HumanMessage(content=user)])
             # Parse numbered/bullet responses and map back
             lines = [l.strip() for l in text.split("\n") if l.strip()]
             for idx, i in enumerate(to_enrich[:20]):

@@ -23,6 +23,8 @@ from app.pipeline.models import (
 from app.pipeline.deterministic import create_deterministic_scanner
 from app.pipeline.ai import AIAgent
 from app.pipeline.reasoner import ContextReasoner
+from app.pipeline.llm_providers import get_llm_provider, LLMChoice
+from app.pipeline.manus_synthesis import ManusSynthesis
 from app.storage.supabase_store import SupabaseStorage
 
 class PipelineOrchestrator:
@@ -30,16 +32,28 @@ class PipelineOrchestrator:
         self,
         file_path: str,
         profile: Profile,
-        project_id: int,  # Changed to int
+        project_id: int,
         user_approved_terminology: Optional[Dict[str, str]] = None,
+        llm_provider: LLMChoice = "gemini",
     ):
         self.file_path = file_path
         self.profile = profile
         self.project_id = project_id
         self.user_approved_terminology = user_approved_terminology or {}
+        self.llm_choice = llm_provider
+        
+        # Get base LLM provider (Gemini/MiniMax/OpenAI)
+        try:
+            self._llm_provider = get_llm_provider(llm_choice=llm_provider)
+        except RuntimeError:
+            self._llm_provider = None
+        
+        # Manus synthesis (always on if available)
+        self.manus = ManusSynthesis()
+        
         self.det_scanner = create_deterministic_scanner(file_path)
         self.ai_scanner = AIAgent(file_path)
-        self.reasoner = ContextReasoner()
+        self.reasoner = ContextReasoner(llm_provider=self._llm_provider)
         self.store = SupabaseStorage()
 
     async def run_full_scan(self) -> ScanResult:
@@ -92,6 +106,19 @@ class PipelineOrchestrator:
         # 7. Calculate Scores
         scores = self._calculate_scores(summary_final_raw)
 
+        # 8. Manus Per-Row Enrichment (always runs if available)
+        if self.manus.is_available():
+            try:
+                # Enrich each issue with holistic guidance
+                issues_final = await self.manus.enrich_issues(issues_final, issue_summaries)
+                # Enrich each summary with holistic guidance
+                issue_summaries = await self.manus.enrich_summaries(issue_summaries)
+                # Add adjusted scores
+                scores = await self.manus.adjust_scores(scores, issue_summaries)
+                print("Generated Manus Synthesis: ", scores)
+            except Exception:
+                pass
+
         result = ScanResult(
             missing_properties=issues_final,
             terminology_mappings=terminology_final,
@@ -100,15 +127,16 @@ class PipelineOrchestrator:
             timestamp=timestamp,
         )
 
-        # 8. Create Report
+        # 9. Create Report
         report_id = self.store.create_report(self.project_id, scores)
 
-        # 9. Save Details
+        # 10. Save Details
         self.store.save_missing_properties(report_id, result.missing_properties)
         self.store.save_terminology(report_id, result.terminology_mappings)
         self.store.save_summary(report_id, result.issue_summaries)
 
         return result
+
 
     def _calculate_scores(self, summaries: List[IssueSummary]) -> Dict[str, float]:
         """Calculate overall readiness and category scores."""

@@ -53,6 +53,7 @@ class SupabaseStorage:
                 "why_it_matters": prop.why_it_matters,
                 "what_is_wrong": prop.what_is_wrong,
                 "where_to_fix_it": prop.where_to_fix_it,
+                "holistic_guidance": prop.holistic_guidance,
             })
         
         # Insert in chunks of 1000 to avoid request size limits
@@ -108,6 +109,7 @@ class SupabaseStorage:
                 "what_is_wrong": s.what_is_wrong,
                 "why_it_matters": s.why_it_matters,
                 "where_to_fix_it": s.where_to_fix_it,
+                "holistic_guidance": s.holistic_guidance,
             })
         
         self.client.table("issue_summaries").insert(batch_data).execute()

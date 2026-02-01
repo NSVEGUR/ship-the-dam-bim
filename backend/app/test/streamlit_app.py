@@ -83,12 +83,23 @@ with col2:
 # Project ID
 project_id = st.number_input("Project ID (Numeric)", min_value=1, value=123, step=1)
 
+# LLM Provider Selection
+st.sidebar.header("AI Configuration")
+llm_options = {"gemini": "Gemini (Default)", "minimax": "MiniMax M2.1", "openai": "OpenAI GPT-4o"}
+llm_provider = st.sidebar.selectbox(
+    "Base LLM Provider",
+    options=list(llm_options.keys()),
+    format_func=lambda x: llm_options[x],
+    help="Select the LLM"
+)
+
 if st.button("Run Scan", type="primary", disabled=not uploaded_file):
     with st.spinner("Scanning... this may take a moment (AI reasoning in progress)..."):
         try:
             files = {"file": (uploaded_file.name, uploaded_file, "application/octet-stream")}
             data = {
                 "project_id": str(project_id),
+                "llm_provider": llm_provider,
             }
             if profile_id:
                 data["profile_id"] = profile_id
@@ -108,14 +119,26 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
                 scores = result.get("scores", {})
                 
                 sc1, sc2, sc3, sc4 = st.columns(4)
+                
+                # Helper to show score with adjustment if present
+                def show_score(label, key):
+                    val = scores.get(key, 0.0)
+                    adj_key = f"adjusted_{key}"
+                    if adj_key in scores:
+                        adj_val = scores[adj_key]
+                        delta = (adj_val - val) * 100
+                        st.metric(label, f"{adj_val * 100:.1f}%", delta=f"{delta:+.1f}% (Adjusted)", delta_color="normal")
+                    else:
+                        st.metric(label, f"{val * 100:.1f}%")
+
                 with sc1:
-                    st.metric("Overall Readiness", f"{scores.get('overall_readiness', 0.0) * 100:.1f}%")
+                    show_score("Overall Readiness", "overall_readiness")
                 with sc2:
-                    st.metric("Object Classification", f"{scores.get('object_classification', 0.0) * 100:.1f}%")
+                    show_score("Object Classification", "object_classification")
                 with sc3:
-                    st.metric("Property Sets", f"{scores.get('property_sets', 0.0) * 100:.1f}%")
+                    show_score("Property Sets", "property_sets")
                 with sc4:
-                    st.metric("Naming Conventions", f"{scores.get('naming_conventions', 0.0) * 100:.1f}%")
+                    show_score("Naming Conventions", "naming_conventions")
 
                 st.header("2. Issue Summary")
                 summary_df = pd.DataFrame(result.get("issue_summaries", []))
@@ -125,7 +148,7 @@ if st.button("Run Scan", type="primary", disabled=not uploaded_file):
                     st.dataframe(summary_df, use_container_width=True)
                     total_failed = int(summary_df["failed_count"].sum())
                     st.metric("Total Violations", total_failed, delta=-total_failed, delta_color="inverse")
-                    
+
                     # Add Download Button for Issues Summary
                     summary_csv = summary_df.to_csv(index=False).encode("utf-8")
                     st.download_button(
